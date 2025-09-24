@@ -870,10 +870,11 @@ export default function Dashboard() {
                   const daysSinceExam = Math.floor((Date.now() - examDate.getTime()) / (1000 * 60 * 60 * 24));
                   
                   return (
-                    <Card key={exam.id} className="group bg-gradient-to-br from-white via-emerald-50/40 to-green-50/30 dark:from-slate-800/80 dark:via-emerald-900/20 dark:to-green-900/15 hover:shadow-2xl transition-all duration-500 border-emerald-200/60 dark:border-emerald-700/50 hover:scale-[1.02] hover:rotate-1 relative overflow-hidden">
-                      {/* Animated Background Elements */}
-                      <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-emerald-400/10 to-green-400/5 rounded-full blur-2xl group-hover:scale-110 transition-transform duration-700"></div>
-                      <div className="absolute -bottom-8 -left-8 w-24 h-24 bg-gradient-to-tr from-green-400/10 to-emerald-400/5 rounded-full blur-xl group-hover:scale-110 transition-transform duration-700"></div>
+                    <Card key={exam.id} className="group bg-gradient-to-br from-white via-emerald-50/40 to-green-50/30 dark:from-slate-800/80 dark:via-emerald-900/20 dark:to-green-900/15 hover:shadow-xl transition-all duration-300 border-emerald-200/60 dark:border-emerald-700/50 relative overflow-hidden hover:bg-gradient-to-br hover:from-emerald-50/60 hover:via-emerald-100/30 hover:to-green-100/40 dark:hover:from-emerald-900/30 dark:hover:via-emerald-800/25 dark:hover:to-green-900/20">
+                      {/* Enhanced Glow Effects for Hover */}
+                      <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/0 via-green-500/0 to-emerald-400/0 group-hover:from-emerald-500/5 group-hover:via-green-500/3 group-hover:to-emerald-400/5 transition-all duration-500 rounded-xl"></div>
+                      <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-emerald-400/5 to-green-400/3 rounded-full blur-2xl group-hover:from-emerald-400/15 group-hover:to-green-400/10 transition-all duration-500"></div>
+                      <div className="absolute -bottom-8 -left-8 w-24 h-24 bg-gradient-to-tr from-green-400/5 to-emerald-400/3 rounded-full blur-xl group-hover:from-green-400/15 group-hover:to-emerald-400/10 transition-all duration-500"></div>
                       
                       {isRecentExam && (
                         <div className="absolute top-4 left-4 bg-gradient-to-r from-orange-400 to-red-400 text-white text-xs px-3 py-1.5 rounded-full font-bold shadow-lg animate-pulse">
@@ -881,7 +882,7 @@ export default function Dashboard() {
                         </div>
                       )}
                       
-                      <CardContent className="p-8 relative">
+                      <CardContent className="p-6 relative">
                         <div className="flex items-center justify-between mb-6">
                           <div className="flex items-center gap-6">
                             <div className="relative">
@@ -1238,10 +1239,17 @@ export default function Dashboard() {
                     className="pl-10 pr-16 h-12 text-base bg-white/80 dark:bg-gray-800/80 border-red-200 dark:border-red-700/50 focus:border-red-400 dark:focus:border-red-500 rounded-xl shadow-sm"
                     onKeyPress={(e) => {
                       if (e.key === 'Enter' && wrongTopicInput.trim()) {
+                        // Title case conversion: her kelimenin baş harfini büyük yap
+                        const titleCaseTopic = wrongTopicInput.trim()
+                          .toLowerCase()
+                          .split(' ')
+                          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                          .join(' ');
+                        
                         setNewQuestion({
                           ...newQuestion, 
                           wrong_topics: [...newQuestion.wrong_topics, {
-                            topic: wrongTopicInput.trim(),
+                            topic: titleCaseTopic,
                             difficulty: selectedTopicDifficulty,
                             category: selectedTopicCategory
                           }]
