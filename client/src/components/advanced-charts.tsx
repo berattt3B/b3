@@ -123,7 +123,7 @@ export function AdvancedCharts() {
           correct: correct,
           wrong: wrong,
           blank: blank,
-          net: Math.max(net.toFixed(1), 0),
+          net: Math.max(parseFloat(net.toFixed(1)), 0),
           successRate: Math.max(successRate, 0),
           totalQuestions: config.max,
           attemptedQuestions: totalAttempted,
@@ -165,7 +165,7 @@ export function AdvancedCharts() {
         correct: estimatedCorrect,
         wrong: estimatedWrong,
         blank: estimatedBlank,
-        net: Math.max(netScore.toFixed(1), 0),
+        net: Math.max(parseFloat(netScore.toFixed(1)), 0),
         successRate: Math.max(successRate, 0),
         totalQuestions: config.max,
         attemptedQuestions: estimatedCorrect + estimatedWrong,
@@ -820,7 +820,7 @@ export function AdvancedCharts() {
               <div className="space-y-6">
                 {/* Hexagonal Subject Distribution Grid */}
                 <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                  {radarChartData.map((subjectData, index) => (
+                  {radarChartData.map((subjectData, index) => subjectData ? (
                     <div
                       key={subjectData.subject}
                       className="relative bg-gradient-to-br from-white to-purple-50/30 dark:from-slate-800/60 dark:to-purple-950/20 rounded-2xl border border-purple-200/50 dark:border-purple-700/40 p-4 hover:shadow-lg transition-all duration-300 hover:scale-105"
@@ -894,14 +894,14 @@ export function AdvancedCharts() {
                         </div>
                       </div>
                     </div>
-                  ))}
+                  ) : null)}
                 </div>
                 
                 {/* Summary Stats */}
                 <div className="grid grid-cols-3 gap-4 mt-6">
                   <div className="text-center p-4 bg-gradient-to-br from-green-50 to-green-100/50 dark:from-green-950/30 dark:to-green-900/20 rounded-xl border border-green-200 dark:border-green-700/50">
                     <div className="text-2xl font-bold text-green-700 dark:text-green-300">
-                      {radarChartData.reduce((sum, s) => sum + s.correct, 0)}
+                      {radarChartData.reduce((sum, s) => sum + (s?.correct || 0), 0)}
                     </div>
                     <div className="text-xs font-medium text-green-600 dark:text-green-400">
                       Toplam Doğru
@@ -909,7 +909,7 @@ export function AdvancedCharts() {
                   </div>
                   <div className="text-center p-4 bg-gradient-to-br from-red-50 to-red-100/50 dark:from-red-950/30 dark:to-red-900/20 rounded-xl border border-red-200 dark:border-red-700/50">
                     <div className="text-2xl font-bold text-red-700 dark:text-red-300">
-                      {radarChartData.reduce((sum, s) => sum + s.wrong, 0)}
+                      {radarChartData.reduce((sum, s) => sum + (s?.wrong || 0), 0)}
                     </div>
                     <div className="text-xs font-medium text-red-600 dark:text-red-400">
                       Toplam Yanlış
@@ -917,7 +917,7 @@ export function AdvancedCharts() {
                   </div>
                   <div className="text-center p-4 bg-gradient-to-br from-purple-50 to-purple-100/50 dark:from-purple-950/30 dark:to-purple-900/20 rounded-xl border border-purple-200 dark:border-purple-700/50">
                     <div className="text-2xl font-bold text-purple-700 dark:text-purple-300">
-                      {radarChartData.reduce((sum, s) => sum + parseFloat(s.net.toString()), 0).toFixed(1)}
+                      {radarChartData.reduce((sum, s) => sum + (s ? parseFloat(s.net.toString()) : 0), 0).toFixed(1)}
                     </div>
                     <div className="text-xs font-medium text-purple-600 dark:text-purple-400">
                       Toplam Net
