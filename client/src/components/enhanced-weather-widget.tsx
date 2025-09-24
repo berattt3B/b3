@@ -102,6 +102,43 @@ export function EnhancedWeatherWidget() {
     return () => clearInterval(timer);
   }, []);
 
+  // Calculate sun position based on current time
+  const calculateSunPosition = (sunriseStr: string, sunsetStr: string, currentTime: Date) => {
+    const today = new Date();
+    const sunrise = new Date();
+    const sunset = new Date();
+    
+    // Parse sunrise and sunset times (format: "HH:MM")
+    const [sunriseHour, sunriseMin] = sunriseStr.split(':').map(Number);
+    const [sunsetHour, sunsetMin] = sunsetStr.split(':').map(Number);
+    
+    sunrise.setHours(sunriseHour, sunriseMin, 0, 0);
+    sunset.setHours(sunsetHour, sunsetMin, 0, 0);
+    
+    const currentMs = currentTime.getTime();
+    const sunriseMs = sunrise.getTime();
+    const sunsetMs = sunset.getTime();
+    
+    // If before sunrise or after sunset, place sun at start or end
+    if (currentMs < sunriseMs) {
+      return { progress: 0, x: 20, y: 50 }; // Start position
+    }
+    if (currentMs > sunsetMs) {
+      return { progress: 1, x: 180, y: 50 }; // End position
+    }
+    
+    // Calculate progress through the day (0 to 1)
+    const dayProgress = (currentMs - sunriseMs) / (sunsetMs - sunriseMs);
+    
+    // Calculate position along the arc: M 20 50 Q 100 10 180 50
+    // This is a quadratic curve from (20,50) to (180,50) with control point (100,10)
+    const t = dayProgress;
+    const x = Math.pow(1-t, 2) * 20 + 2*(1-t)*t * 100 + Math.pow(t, 2) * 180;
+    const y = Math.pow(1-t, 2) * 50 + 2*(1-t)*t * 10 + Math.pow(t, 2) * 50;
+    
+    return { progress: dayProgress, x, y };
+  };
+
   const { data: weather, isLoading, error } = useQuery<WeatherData>({
     queryKey: ["/api/weather"],
     queryFn: async () => {
@@ -144,6 +181,9 @@ export function EnhancedWeatherWidget() {
   }
 
   if (!weather) return null;
+
+  // Calculate current sun position
+  const sunPosition = calculateSunPosition(weather.sunData.sunrise, weather.sunData.sunset, currentTime);
 
   // Helper function to get wind direction
   const getWindDirection = (degree: number) => {
@@ -377,25 +417,30 @@ export function EnhancedWeatherWidget() {
               strokeDasharray="5,5"
             />
             
-            {/* Sun Position - Fixed at left bottom */}
+            {/* Sun Position - Dynamic based on current time */}
             <circle
-              cx={20}
-              cy={50}
+              cx={sunPosition.x}
+              cy={sunPosition.y}
               r="6"
               fill="currentColor"
-              className="text-yellow-500 animate-pulse"
+              className="text-yellow-500 animate-pulse drop-shadow-lg"
+              style={{
+                filter: 'drop-shadow(0 0 8px rgba(255, 255, 0, 0.6))',
+                transition: 'cx 2s ease-in-out, cy 2s ease-in-out'
+              }}
             />
             
-            {/* Sun Rays - Fixed position */}
+            {/* Sun Rays - Dynamic position */}
             <g className="text-yellow-400 opacity-70">
               {[0, 45, 90, 135, 180, 225, 270, 315].map((angle, i) => {
-                const sunX = 20;
-                const sunY = 50;
+                const sunX = sunPosition.x;
+                const sunY = sunPosition.y;
                 const radians = (angle * Math.PI) / 180;
-                const x1 = sunX + 8 * Math.cos(radians);
-                const y1 = sunY + 8 * Math.sin(radians);
-                const x2 = sunX + 12 * Math.cos(radians);
-                const y2 = sunY + 12 * Math.sin(radians);
+                const rayLength = 8 + Math.sin(Date.now() / 1000 + i) * 2; // Animated ray length
+                const x1 = sunX + rayLength * Math.cos(radians);
+                const y1 = sunY + rayLength * Math.sin(radians);
+                const x2 = sunX + (rayLength + 4) * Math.cos(radians);
+                const y2 = sunY + (rayLength + 4) * Math.sin(radians);
                 
                 return (
                   <line
@@ -405,13 +450,27 @@ export function EnhancedWeatherWidget() {
                     x2={x2}
                     y2={y2}
                     stroke="currentColor"
-                    strokeWidth="1"
+                    strokeWidth="1.5"
                     className="animate-pulse"
-                    style={{ animationDelay: `${i * 0.1}s` }}
+                    style={{ 
+                      animationDelay: `${i * 0.1}s`,
+                      transition: 'x1 2s ease-in-out, y1 2s ease-in-out, x2 2s ease-in-out, y2 2s ease-in-out'
+                    }}
                   />
                 );
               })}
             </g>
+            
+            {/* Current time indicator */}
+            <text
+              x={sunPosition.x}
+              y={sunPosition.y - 15}
+              textAnchor="middle"
+              className="text-xs font-medium fill-yellow-600 dark:fill-yellow-400"
+              style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))' }}
+            >
+              {currentTime.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}
+            </text>
           </svg>
         </div>
       </div>
