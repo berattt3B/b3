@@ -21,9 +21,9 @@ interface PriorityTopic {
 
 export function AdvancedCharts() {
   // State for Priority Topics Analysis view toggle
-  const [priorityViewMode, setPriorityViewMode] = useState<'chart' | 'text'>('chart');
+  const [priorityViewMode, setPriorityViewMode] = useState<'chart' | 'text'>('text');
   // State for Error Frequency Analysis view toggle
-  const [errorViewMode, setErrorViewMode] = useState<'chart' | 'text'>('chart');
+  const [errorViewMode, setErrorViewMode] = useState<'chart' | 'text'>('text');
 
   const { data: examResults = [], isLoading: isLoadingExams } = useQuery<ExamResult[]>({
     queryKey: ["/api/exam-results"],
@@ -68,36 +68,110 @@ export function AdvancedCharts() {
     }));
   }, [examResults]);
 
-  // Prepare radar chart data for subject distribution (latest exam)
+  // Prepare enhanced hexagonal chart data for subject distribution (latest exam with fallback)
   const radarChartData = useMemo(() => {
     if (examResults.length === 0) return [];
     
     // Sort exams by date descending to get the actual latest exam
     const sortedExams = [...examResults].sort((a, b) => new Date(b.exam_date).getTime() - new Date(a.exam_date).getTime());
     const latestExam = sortedExams[0];
+    
+    // Try to parse subjects data from the latest exam (new format)
+    let subjectsData = {};
+    try {
+      subjectsData = latestExam.subjects_data ? JSON.parse(latestExam.subjects_data) : {};
+    } catch (e) {
+      console.error('Failed to parse subjects data:', e);
+      subjectsData = {};
+    }
+    
+    // Subject configuration with key mappings for both formats
+    const subjectConfig: { [key: string]: { 
+      max: number, 
+      displayName: string, 
+      emoji: string,
+      legacyName?: string // For mapping from examSubjectNets
+    } } = {
+      'turkce': { max: 40, displayName: 'Türkçe', emoji: '📚', legacyName: 'Türkçe' },
+      'matematik': { max: 40, displayName: 'Matematik', emoji: '📐', legacyName: 'Matematik' },
+      'sosyal': { max: 20, displayName: 'Sosyal', emoji: '🏛️', legacyName: 'Sosyal Bilimler' },
+      'fen': { max: 20, displayName: 'Fen', emoji: '🔬', legacyName: 'Fen Bilimleri' },
+      'fizik': { max: 14, displayName: 'Fizik', emoji: '⚛️', legacyName: 'Fizik' },
+      'kimya': { max: 13, displayName: 'Kimya', emoji: '🧪', legacyName: 'Kimya' },
+      'biyoloji': { max: 13, displayName: 'Biyoloji', emoji: '🧬', legacyName: 'Biyoloji' }
+    };
+    
+    // If subjects_data exists and has data, use new format
+    if (Object.keys(subjectsData).length > 0) {
+      return Object.entries(subjectsData).map(([subjectKey, data]: [string, any]) => {
+        const correct = parseInt(data.correct) || 0;
+        const wrong = parseInt(data.wrong) || 0;
+        const blank = parseInt(data.blank) || 0;
+        const config = subjectConfig[subjectKey];
+        
+        if (!config || (correct === 0 && wrong === 0 && blank === 0)) {
+          return null;
+        }
+        
+        const net = correct - (wrong * 0.25);
+        const successRate = config.max > 0 ? Math.min(Math.round((net / config.max) * 100), 100) : 0;
+        const totalAttempted = correct + wrong + blank;
+        
+        return {
+          subject: config.displayName,
+          subjectEmoji: config.emoji,
+          correct: correct,
+          wrong: wrong,
+          blank: blank,
+          net: Math.max(net.toFixed(1), 0),
+          successRate: Math.max(successRate, 0),
+          totalQuestions: config.max,
+          attemptedQuestions: totalAttempted,
+          accuracy: totalAttempted > 0 ? Math.round((correct / totalAttempted) * 100) : 0
+        };
+      }).filter(Boolean);
+    }
+    
+    // Fallback to examSubjectNets for legacy compatibility
     const latestExamNets = examSubjectNets.filter(net => net.exam_id === latestExam.id);
     
     if (latestExamNets.length === 0) {
-      return []; // No mock data - show empty state
+      return []; // No data available in either format
     }
-    
-    // Subject max values for percentage calculation
-    const subjectMaxValues: { [key: string]: number } = {
-      'Türkçe': 40, 'Sosyal Bilimler': 20, 'Matematik': 40, 'Fizik': 14, 'Kimya': 13, 'Biyoloji': 13
-    };
     
     return latestExamNets.map(net => {
       const netScore = parseFloat(net.net_score) || 0;
-      const maxValue = subjectMaxValues[net.subject] || 40; // Default to 40 if subject not found
-      const percentage = Math.min(Math.round((netScore / maxValue) * 100), 100); // Clamp to 100
+      
+      // Find matching subject config by legacy name
+      const configEntry = Object.entries(subjectConfig).find(([key, config]) => 
+        config.legacyName === net.subject || config.displayName === net.subject
+      );
+      
+      if (!configEntry) return null;
+      
+      const [subjectKey, config] = configEntry;
+      const maxValue = config.max;
+      const successRate = Math.min(Math.round((netScore / maxValue) * 100), 100);
+      
+      // For legacy format, we don't have individual correct/wrong counts
+      // Estimate based on net score (this is approximate)
+      const estimatedCorrect = Math.max(0, Math.round(netScore + 2)); // Rough estimate
+      const estimatedWrong = Math.max(0, Math.round((estimatedCorrect - netScore) / 0.25));
+      const estimatedBlank = Math.max(0, maxValue - estimatedCorrect - estimatedWrong);
       
       return {
-        subject: net.subject,
-        net: netScore,
-        percentage: isNaN(percentage) ? 0 : percentage,
-        maxPercentage: 100
+        subject: config.displayName,
+        subjectEmoji: config.emoji,
+        correct: estimatedCorrect,
+        wrong: estimatedWrong,
+        blank: estimatedBlank,
+        net: Math.max(netScore.toFixed(1), 0),
+        successRate: Math.max(successRate, 0),
+        totalQuestions: config.max,
+        attemptedQuestions: estimatedCorrect + estimatedWrong,
+        accuracy: estimatedCorrect + estimatedWrong > 0 ? Math.round((estimatedCorrect / (estimatedCorrect + estimatedWrong)) * 100) : 0
       };
-    });
+    }).filter(Boolean);
   }, [examResults, examSubjectNets]);
 
   // NEW: Prepare priority topics data for bar chart
@@ -743,74 +817,124 @@ export function AdvancedCharts() {
                 </div>
               </div>
             ) : (
-              <div className="h-80">
-                <ResponsiveContainer width="100%" height="100%">
-                  <RadarChart data={radarChartData} margin={{ top: 40, right: 40, bottom: 40, left: 40 }}>
-                    <PolarGrid 
-                      className="opacity-30" 
-                      stroke="currentColor"
-                      strokeWidth={1}
-                      fill="transparent"
-                    />
-                    <PolarAngleAxis 
-                      dataKey="subject" 
-                      className="text-xs text-foreground"
-                      tick={{ fontSize: 12, fontWeight: 600, fill: 'currentColor' }}
-                      tickFormatter={(value) => value.length > 8 ? `${value.substring(0, 8)}...` : value}
-                    />
-                    <PolarRadiusAxis 
-                      angle={90} 
-                      domain={[0, 100]}
-                      className="text-xs text-muted-foreground"
-                      tick={{ fontSize: 10, fill: 'currentColor' }}
-                      tickCount={6}
-                      stroke="currentColor"
-                      strokeWidth={1}
-                    />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: 'hsl(var(--card))',
-                        border: '1px solid hsl(var(--border))',
-                        borderRadius: '12px',
-                        fontSize: '13px',
-                        boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
-                        padding: '12px'
-                      }}
-                      formatter={(value: any, name: any) => [
-                        `%${typeof value === 'number' ? value.toFixed(1) : value}`,
-                        '📊 Başarı Oranı'
-                      ]}
-                      labelFormatter={(label) => `📚 ${label}`}
-                    />
-                    <Radar
-                      name="percentage"
-                      dataKey="percentage"
-                      stroke="url(#radarGradient)"
-                      fill="url(#radarFillGradient)"
-                      fillOpacity={0.2}
-                      strokeWidth={3}
-                      dot={{ fill: "url(#radarDotGradient)", strokeWidth: 2, r: 5, stroke: '#ffffff' }}
-                      activeDot={{ r: 7, stroke: '#8b5cf6', strokeWidth: 3, fill: '#ffffff' }}
-                    />
-                    
-                    {/* Enhanced Gradient Definitions */}
-                    <defs>
-                      <linearGradient id="radarGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor="#8b5cf6" />
-                        <stop offset="50%" stopColor="#a855f7" />
-                        <stop offset="100%" stopColor="#7c3aed" />
-                      </linearGradient>
-                      <radialGradient id="radarFillGradient" cx="50%" cy="50%" r="50%">
-                        <stop offset="0%" stopColor="#8b5cf6" stopOpacity="0.4" />
-                        <stop offset="100%" stopColor="#7c3aed" stopOpacity="0.1" />
-                      </radialGradient>
-                      <linearGradient id="radarDotGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor="#a855f7" />
-                        <stop offset="100%" stopColor="#8b5cf6" />
-                      </linearGradient>
-                    </defs>
-                  </RadarChart>
-                </ResponsiveContainer>
+              <div className="space-y-6">
+                {/* Hexagonal Subject Distribution Grid */}
+                <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                  {radarChartData.map((subjectData, index) => (
+                    <div
+                      key={subjectData.subject}
+                      className="relative bg-gradient-to-br from-white to-purple-50/30 dark:from-slate-800/60 dark:to-purple-950/20 rounded-2xl border border-purple-200/50 dark:border-purple-700/40 p-4 hover:shadow-lg transition-all duration-300 hover:scale-105"
+                    >
+                      {/* Subject Header */}
+                      <div className="flex items-center justify-center mb-3">
+                        <div className="text-center">
+                          <span className="text-2xl mb-1 block">{subjectData.subjectEmoji}</span>
+                          <h4 className="text-sm font-bold text-purple-700 dark:text-purple-300">
+                            {subjectData.subject}
+                          </h4>
+                        </div>
+                      </div>
+                      
+                      {/* Hexagonal Progress Ring */}
+                      <div className="flex justify-center mb-4">
+                        <div className="relative w-20 h-20">
+                          <svg className="w-20 h-20 transform -rotate-90" viewBox="0 0 80 80">
+                            {/* Background ring */}
+                            <circle
+                              cx="40"
+                              cy="40"
+                              r="32"
+                              stroke="currentColor"
+                              strokeWidth="6"
+                              fill="transparent"
+                              className="text-purple-200 dark:text-purple-800"
+                            />
+                            {/* Progress ring */}
+                            <circle
+                              cx="40"
+                              cy="40"
+                              r="32"
+                              stroke="url(#hexProgressGradient)"
+                              strokeWidth="6"
+                              fill="transparent"
+                              strokeDasharray={`${2 * Math.PI * 32}`}
+                              strokeDashoffset={`${2 * Math.PI * 32 * (1 - subjectData.successRate / 100)}`}
+                              strokeLinecap="round"
+                              className="transition-all duration-1000 ease-out"
+                            />
+                          </svg>
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <span className="text-lg font-bold text-purple-700 dark:text-purple-300">
+                              {subjectData.net}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* Stats */}
+                      <div className="space-y-2">
+                        <div className="flex justify-between items-center text-xs">
+                          <span className="text-green-600 dark:text-green-400 font-medium">
+                            ✓ Doğru: {subjectData.correct}
+                          </span>
+                          <span className="text-red-600 dark:text-red-400 font-medium">
+                            ✗ Yanlış: {subjectData.wrong}
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center text-xs">
+                          <span className="text-yellow-600 dark:text-yellow-400 font-medium">
+                            ○ Boş: {subjectData.blank}
+                          </span>
+                          <span className="text-purple-600 dark:text-purple-400 font-medium">
+                            %{subjectData.accuracy} Doğruluk
+                          </span>
+                        </div>
+                        <div className="text-center text-xs text-muted-foreground pt-1 border-t border-purple-200/50 dark:border-purple-700/50">
+                          Net: {subjectData.net} / {subjectData.totalQuestions}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                
+                {/* Summary Stats */}
+                <div className="grid grid-cols-3 gap-4 mt-6">
+                  <div className="text-center p-4 bg-gradient-to-br from-green-50 to-green-100/50 dark:from-green-950/30 dark:to-green-900/20 rounded-xl border border-green-200 dark:border-green-700/50">
+                    <div className="text-2xl font-bold text-green-700 dark:text-green-300">
+                      {radarChartData.reduce((sum, s) => sum + s.correct, 0)}
+                    </div>
+                    <div className="text-xs font-medium text-green-600 dark:text-green-400">
+                      Toplam Doğru
+                    </div>
+                  </div>
+                  <div className="text-center p-4 bg-gradient-to-br from-red-50 to-red-100/50 dark:from-red-950/30 dark:to-red-900/20 rounded-xl border border-red-200 dark:border-red-700/50">
+                    <div className="text-2xl font-bold text-red-700 dark:text-red-300">
+                      {radarChartData.reduce((sum, s) => sum + s.wrong, 0)}
+                    </div>
+                    <div className="text-xs font-medium text-red-600 dark:text-red-400">
+                      Toplam Yanlış
+                    </div>
+                  </div>
+                  <div className="text-center p-4 bg-gradient-to-br from-purple-50 to-purple-100/50 dark:from-purple-950/30 dark:to-purple-900/20 rounded-xl border border-purple-200 dark:border-purple-700/50">
+                    <div className="text-2xl font-bold text-purple-700 dark:text-purple-300">
+                      {radarChartData.reduce((sum, s) => sum + parseFloat(s.net.toString()), 0).toFixed(1)}
+                    </div>
+                    <div className="text-xs font-medium text-purple-600 dark:text-purple-400">
+                      Toplam Net
+                    </div>
+                  </div>
+                </div>
+
+                {/* SVG Definitions */}
+                <svg width="0" height="0">
+                  <defs>
+                    <linearGradient id="hexProgressGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="#8b5cf6" />
+                      <stop offset="50%" stopColor="#a855f7" />
+                      <stop offset="100%" stopColor="#7c3aed" />
+                    </linearGradient>
+                  </defs>
+                </svg>
               </div>
             )}
           </div>

@@ -279,14 +279,21 @@ export function QuestionAnalysisCharts() {
                 </ResponsiveContainer>
               </div>
               
-              {/* Enhanced Summary Statistics */}
-              <div className="grid grid-cols-3 gap-6 pt-6 border-t-2 border-emerald-200/30 dark:border-emerald-700/30">
+              {/* Enhanced Summary Statistics - 2x2 Grid Layout */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 pt-6 border-t-2 border-emerald-200/30 dark:border-emerald-700/30">
                 <div className="text-center bg-white/40 dark:bg-gray-900/40 rounded-xl p-4 backdrop-blur-sm border border-emerald-200/30 dark:border-emerald-700/30 shadow-lg">
                   <div className="text-2xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent mb-1">
                     {dailyWeeklyData.reduce((sum, d) => sum + d.correctQuestions, 0)}
                   </div>
                   <div className="text-sm text-muted-foreground font-medium">✅ Toplam Doğru</div>
                   <div className="w-8 h-1 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full mx-auto mt-2"></div>
+                </div>
+                <div className="text-center bg-white/40 dark:bg-gray-900/40 rounded-xl p-4 backdrop-blur-sm border border-red-200/30 dark:border-red-700/30 shadow-lg">
+                  <div className="text-2xl font-bold bg-gradient-to-r from-red-600 to-red-500 bg-clip-text text-transparent mb-1">
+                    {dailyWeeklyData.reduce((sum, d) => sum + d.wrongQuestions, 0)}
+                  </div>
+                  <div className="text-sm text-muted-foreground font-medium">❌ Toplam Yanlış</div>
+                  <div className="w-8 h-1 bg-gradient-to-r from-red-500 to-red-600 rounded-full mx-auto mt-2"></div>
                 </div>
                 <div className="text-center bg-white/40 dark:bg-gray-900/40 rounded-xl p-4 backdrop-blur-sm border border-emerald-200/30 dark:border-emerald-700/30 shadow-lg">
                   <div className="text-2xl font-bold bg-gradient-to-r from-emerald-600 to-blue-600 bg-clip-text text-transparent mb-1">

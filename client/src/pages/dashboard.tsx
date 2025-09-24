@@ -211,6 +211,7 @@ export default function Dashboard() {
           biyoloji: { correct: "", wrong: "", blank: "", wrong_topics: [] as string[] }
         }
       });
+      setCurrentWrongTopics({}); // Clear all wrong topics input fields
     },
     onError: () => {
       toast({ title: "Hata", description: "Deneme sonucu eklenemedi.", variant: "destructive" });
@@ -454,9 +455,10 @@ export default function Dashboard() {
             </CardHeader>
             <CardContent className="pt-6">
               {/* GitHub-style yearly contribution graph */}
-              <div className="overflow-x-auto">
-                {/* Month labels */}
-                <div className="flex mb-2">
+              <div className="overflow-x-auto flex justify-center">
+                <div className="inline-block">
+                  {/* Month labels */}
+                  <div className="flex mb-2">
                   <div className="w-6"></div> {/* Space for day labels */}
                   {Array.from({ length: 12 }, (_, monthIndex) => {
                     const monthNames = [
@@ -518,6 +520,7 @@ export default function Dashboard() {
                       </div>
                     ))}
                   </div>
+                </div>
                 </div>
               </div>
               
@@ -734,45 +737,57 @@ export default function Dashboard() {
                 </div>
               </div>
             ) : (
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+              <div className="space-y-4">
                 {examResults.map((exam, index) => {
                   // Emoji selection based on index
                   const emojis = ['🏆', '💯', '🏅', '✨', '🔥', '🚀', '🎆', '🎉', '🎨', '🏁', '📚', '🎯', '💡', '⚡', '🌟'];
                   const examEmoji = emojis[index % emojis.length];
                   
                   return (
-                    <Card key={exam.id} className="compact-exam-card bg-gradient-to-br from-white via-emerald-50/20 to-green-50/20 dark:from-slate-800/40 dark:via-emerald-900/10 dark:to-green-900/10 hover:shadow-md transition-all duration-200 border-emerald-200/40 dark:border-emerald-700/30 hover:scale-102">
-                      <CardContent className="p-3">
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-lg">{examEmoji}</span>
-                            <div className="text-xs font-bold text-emerald-700 dark:text-emerald-300 truncate max-w-20">
-                              {exam.exam_name}
+                    <Card key={exam.id} className="bg-gradient-to-r from-white via-emerald-50/30 to-green-50/30 dark:from-slate-800/60 dark:via-emerald-900/20 dark:to-green-900/20 hover:shadow-lg transition-all duration-300 border-emerald-200/50 dark:border-emerald-700/40 hover:scale-[1.02]">
+                      <CardContent className="p-6">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-4">
+                            <div className="flex items-center gap-3">
+                              <span className="text-3xl">{examEmoji}</span>
+                              <div>
+                                <div className="text-lg font-bold text-emerald-700 dark:text-emerald-300">
+                                  {exam.exam_name}
+                                </div>
+                                <div className="text-sm text-muted-foreground">
+                                  {new Date(exam.exam_date).toLocaleDateString('tr-TR', { 
+                                    day: 'numeric', 
+                                    month: 'long', 
+                                    year: 'numeric' 
+                                  })}
+                                </div>
+                              </div>
                             </div>
                           </div>
-                          <button
-                            onClick={() => deleteExamResultMutation.mutate(exam.id)}
-                            disabled={deleteExamResultMutation.isPending}
-                            className="text-red-400 hover:text-red-600 p-0.5 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
-                            title="Sil"
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </button>
-                        </div>
-                        <div className="text-[10px] text-muted-foreground mb-2">
-                          {new Date(exam.exam_date).toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit' })}
-                        </div>
-                        <div className="space-y-1">
-                          <div className="flex justify-between items-center">
-                            <span className="text-[10px] font-medium text-emerald-600 dark:text-emerald-400">TYT:</span>
-                            <span className="text-xs font-bold">{exam.tyt_net}</span>
-                          </div>
-                          {exam.ayt_net !== "0" && (
-                            <div className="flex justify-between items-center">
-                              <span className="text-[10px] font-medium text-blue-600 dark:text-blue-400">AYT:</span>
-                              <span className="text-xs font-bold">{exam.ayt_net}</span>
+                          
+                          <div className="flex items-center gap-6">
+                            <div className="flex gap-4">
+                              <div className="text-center p-3 bg-gradient-to-br from-emerald-100 to-emerald-50 dark:from-emerald-900/30 dark:to-emerald-800/20 rounded-xl border border-emerald-200 dark:border-emerald-700/50">
+                                <span className="text-sm font-medium text-emerald-600 dark:text-emerald-400">TYT Net</span>
+                                <div className="text-2xl font-bold text-emerald-700 dark:text-emerald-300">{exam.tyt_net}</div>
+                              </div>
+                              {exam.ayt_net !== "0" && (
+                                <div className="text-center p-3 bg-gradient-to-br from-blue-100 to-blue-50 dark:from-blue-900/30 dark:to-blue-800/20 rounded-xl border border-blue-200 dark:border-blue-700/50">
+                                  <span className="text-sm font-medium text-blue-600 dark:text-blue-400">AYT Net</span>
+                                  <div className="text-2xl font-bold text-blue-700 dark:text-blue-300">{exam.ayt_net}</div>
+                                </div>
+                              )}
                             </div>
-                          )}
+                            
+                            <button
+                              onClick={() => deleteExamResultMutation.mutate(exam.id)}
+                              disabled={deleteExamResultMutation.isPending}
+                              className="text-red-400 hover:text-red-600 p-2 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                              title="Deneme sonucunu sil"
+                            >
+                              <Trash2 className="h-5 w-5" />
+                            </button>
+                          </div>
                         </div>
                       </CardContent>
                     </Card>
@@ -1871,7 +1886,7 @@ export default function Dashboard() {
                       biyoloji: { correct: "", wrong: "", blank: "", wrong_topics: [] as string[] }
                     }
                   });
-                  setCurrentWrongTopics({});
+                  setCurrentWrongTopics({}); // Clear all wrong topics input fields
                 }}
               >
                 İptal
