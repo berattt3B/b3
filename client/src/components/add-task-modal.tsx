@@ -23,6 +23,8 @@ export function AddTaskModal({ open, onOpenChange }: AddTaskModalProps) {
     category: "genel" | "turkce" | "sosyal" | "matematik" | "fizik" | "kimya" | "biyoloji" | "ayt-matematik" | "ayt-fizik" | "ayt-kimya" | "ayt-biyoloji";
     color: string;
     dueDate: string;
+    recurrenceType: "none" | "weekly" | "monthly";
+    recurrenceEndDate: string;
   }>({
     title: "",
     description: "",
@@ -30,6 +32,8 @@ export function AddTaskModal({ open, onOpenChange }: AddTaskModalProps) {
     category: "genel",
     color: "#8B5CF6", // Default purple
     dueDate: new Date().toISOString().split('T')[0], // Today's date
+    recurrenceType: "none",
+    recurrenceEndDate: "",
   });
 
   const { toast } = useToast();
@@ -64,6 +68,8 @@ export function AddTaskModal({ open, onOpenChange }: AddTaskModalProps) {
       category: "genel",
       color: "#8B5CF6", // Default purple
       dueDate: new Date().toISOString().split('T')[0], // Today's date
+      recurrenceType: "none",
+      recurrenceEndDate: "",
     });
   };
 
@@ -86,6 +92,8 @@ export function AddTaskModal({ open, onOpenChange }: AddTaskModalProps) {
       category: formData.category,
       color: formData.color,
       dueDate: formData.dueDate,
+      recurrenceType: formData.recurrenceType,
+      recurrenceEndDate: formData.recurrenceEndDate || undefined,
       completed: false,
     });
   };
@@ -178,17 +186,60 @@ export function AddTaskModal({ open, onOpenChange }: AddTaskModalProps) {
             </div>
           </div>
 
-          {/* Due Date */}
-          <div>
-            <Label htmlFor="task-due-date">Son Tarih</Label>
-            <Input
-              id="task-due-date"
-              type="date"
-              value={formData.dueDate}
-              onChange={(e) => setFormData(prev => ({ ...prev, dueDate: e.target.value }))}
-              className="w-full"
-              data-testid="input-task-due-date"
-            />
+          {/* Due Date & Recurrence */}
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="task-due-date">Son Tarih</Label>
+              <Input
+                id="task-due-date"
+                type="date"
+                value={formData.dueDate}
+                onChange={(e) => setFormData(prev => ({ ...prev, dueDate: e.target.value }))}
+                className="w-full"
+                data-testid="input-task-due-date"
+              />
+            </div>
+            
+            {/* Recurrence Type */}
+            <div>
+              <Label htmlFor="task-recurrence">Yinelenme</Label>
+              <Select
+                value={formData.recurrenceType}
+                onValueChange={(value: "none" | "weekly" | "monthly") => 
+                  setFormData(prev => ({ ...prev, recurrenceType: value }))
+                }
+              >
+                <SelectTrigger data-testid="select-task-recurrence">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Yinelenmeyen</SelectItem>
+                  <SelectItem value="weekly">📅 Haftalık</SelectItem>
+                  <SelectItem value="monthly">🗓️ Aylık</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            {/* Recurrence End Date - only show if recurrence is enabled */}
+            {formData.recurrenceType !== "none" && (
+              <div>
+                <Label htmlFor="task-recurrence-end">Yinelenme Bitiş Tarihi (İsteğe Bağlı)</Label>
+                <Input
+                  id="task-recurrence-end"
+                  type="date"
+                  value={formData.recurrenceEndDate}
+                  onChange={(e) => setFormData(prev => ({ ...prev, recurrenceEndDate: e.target.value }))}
+                  className="w-full"
+                  data-testid="input-task-recurrence-end"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  {formData.recurrenceType === "weekly" 
+                    ? "Her hafta yeni görev oluşturulacak" 
+                    : "Her ay yeni görev oluşturulacak"}
+                  {formData.recurrenceEndDate && ` (${formData.recurrenceEndDate} tarihine kadar)`}
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Color Picker */}

@@ -12,7 +12,7 @@ interface TasksSectionProps {
 }
 
 export function TasksSection({ onAddTask }: TasksSectionProps) {
-  const [filter, setFilter] = useState<"all" | "pending" | "completed" | "high">("all");
+  const [filter, setFilter] = useState<"all" | "pending" | "completed" | "high" | "weekly" | "monthly">("all");
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const { toast } = useToast();
@@ -69,6 +69,10 @@ export function TasksSection({ onAddTask }: TasksSectionProps) {
         return task.completed;
       case "high":
         return task.priority === "high";
+      case "weekly":
+        return task.recurrenceType === "weekly";
+      case "monthly":
+        return task.recurrenceType === "monthly";
       default:
         return true;
     }
@@ -257,6 +261,28 @@ export function TasksSection({ onAddTask }: TasksSectionProps) {
           data-testid="filter-high-priority"
         >
           Yüksek Öncelik
+        </button>
+        <button
+          onClick={() => setFilter("weekly")}
+          className={`px-3 py-1 rounded-full text-sm transition-colors ${
+            filter === "weekly"
+              ? "bg-primary text-primary-foreground"
+              : "bg-secondary text-secondary-foreground hover:bg-accent"
+          }`}
+          data-testid="filter-weekly"
+        >
+          📅 Haftalık
+        </button>
+        <button
+          onClick={() => setFilter("monthly")}
+          className={`px-3 py-1 rounded-full text-sm transition-colors ${
+            filter === "monthly"
+              ? "bg-primary text-primary-foreground"
+              : "bg-secondary text-secondary-foreground hover:bg-accent"
+          }`}
+          data-testid="filter-monthly"
+        >
+          🗓️ Aylık
         </button>
       </div>
 

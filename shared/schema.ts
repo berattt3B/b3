@@ -13,6 +13,8 @@ export const tasks = pgTable("tasks", {
   completed: boolean("completed").notNull().default(false),
   completedAt: text("completed_at"),
   dueDate: text("due_date"),
+  recurrenceType: text("recurrence_type", { enum: ["none", "weekly", "monthly"] }).notNull().default("none"),
+  recurrenceEndDate: text("recurrence_end_date"), // Optional - when to stop creating recurring tasks
   createdAt: timestamp("created_at").defaultNow(),
 });
 
