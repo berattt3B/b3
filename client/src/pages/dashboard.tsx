@@ -475,8 +475,8 @@ export default function Dashboard() {
             </CardHeader>
             <CardContent className="pt-6">
               {/* GitHub-style yearly contribution graph */}
-              <div className="overflow-x-auto flex justify-center">
-                <div className="inline-block">
+              <div className="flex justify-center">
+                <div className="inline-block min-w-0">
                   {/* Month labels */}
                   <div className="flex mb-2">
                   <div className="w-8"></div> {/* Space for day labels */}
@@ -532,24 +532,29 @@ export default function Dashboard() {
                           return (
                             <div
                               key={dayIndex}
-                              className={`w-5 h-5 rounded-md border transition-all duration-200 hover:scale-110 cursor-pointer relative ${
+                              className={`w-5 h-5 rounded-md border transition-all duration-200 hover:brightness-110 hover:shadow-md cursor-pointer relative ${
                                 day.isToday 
-                                  ? 'border-2 border-purple-400 dark:border-purple-300 shadow-lg shadow-purple-300 dark:shadow-purple-800' 
+                                  ? 'border-2 border-purple-400 dark:border-purple-300 shadow-lg shadow-purple-300 dark:shadow-purple-800 ring-2 ring-purple-200 dark:ring-purple-700' 
                                   : day.intensity === 0 
                                     ? 'bg-gray-100 dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:bg-gray-200 dark:hover:bg-gray-700' 
                                     : 'border-purple-300 dark:border-purple-600 hover:border-purple-400 dark:hover:border-purple-500'
-                              } ${day.isToday ? 'animate-pulse' : ''}`}
+                              }`}
                               style={{
                                 backgroundColor: day.isToday 
-                                  ? (day.intensity > 0 ? `rgba(147, 51, 234, 0.8)` : `rgba(147, 51, 234, 0.3)`)
+                                  ? (day.intensity > 0 ? `rgba(147, 51, 234, 0.9)` : `rgba(147, 51, 234, 0.4)`)
                                   : day.intensity > 0 ? `rgba(147, 51, 234, ${opacity})` : undefined,
-                                animation: day.isToday ? 'breathing 2s ease-in-out infinite' : undefined
+                                animation: day.isToday ? 'breathing 1.8s ease-in-out infinite' : undefined,
+                                boxShadow: day.isToday ? '0 0 20px rgba(147, 51, 234, 0.6)' : undefined
                               }}
                               title={`${day.date}${day.isToday ? ' (BUGÜN)' : ''}: ${day.count} aktivite (${day.questionCount} soru, ${day.taskCount} görev)`}
                               onClick={() => handleHeatmapDayClick(day)}
                             >
                               {day.isToday && (
-                                <div className="absolute inset-0 rounded-md bg-white dark:bg-purple-300 opacity-40 animate-ping pointer-events-none"></div>
+                                <>
+                                  <div className="absolute inset-0 rounded-md bg-white dark:bg-purple-300 opacity-40 animate-ping pointer-events-none"></div>
+                                  <div className="absolute inset-0 rounded-md bg-gradient-to-br from-white/20 to-transparent pointer-events-none"></div>
+                                  <div className="absolute top-0 right-0 w-1 h-1 bg-yellow-400 rounded-full animate-pulse"></div>
+                                </>
                               )}
                             </div>
                           );
