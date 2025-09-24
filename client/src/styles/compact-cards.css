@@ -1,0 +1,17 @@
+/* Compact exam cards styles */
+.compact-exam-card {
+  min-height: 120px;
+  max-width: 180px;
+}
+
+.compact-exam-card:hover {
+  transform: scale(1.02);
+  transition: all 0.2s ease;
+}
+
+/* Prevent text overflow in compact cards */
+.compact-exam-card .truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

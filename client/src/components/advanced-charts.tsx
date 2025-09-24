@@ -265,7 +265,7 @@ export function AdvancedCharts() {
                         boxShadow: '0 8px 32px rgba(0,0,0,0.1)'
                       }}
                       formatter={(value: any, name: any, props: any) => [
-                        `%${value.toFixed(1)}`,
+                        `%${typeof value === 'number' ? value.toFixed(1) : value}`,
                         props.payload.improvementNeeded ? '🔥 Acil Öncelik' : '⚠️ Dikkat Gerekli'
                       ]}
                       labelFormatter={(label: any, payload: any) => payload?.[0]?.payload?.fullTopic || label}
@@ -308,7 +308,7 @@ export function AdvancedCharts() {
                         </h4>
                         <div className="text-right">
                           <div className="text-2xl font-bold text-red-600 dark:text-red-400">
-                            %{topic.priority.toFixed(1)}
+                            %{typeof topic.priority === 'number' ? topic.priority.toFixed(1) : topic.priority}
                           </div>
                           <div className="text-xs text-red-600/70 dark:text-red-400/70">öncelik</div>
                         </div>
@@ -550,7 +550,7 @@ export function AdvancedCharts() {
                       
                       {/* Frequency Indicator */}
                       <div className="text-xs text-blue-600/60 dark:text-blue-400/60">
-                        Sıklık Oranı: %{topic.frequency.toFixed(1)}
+                        Sıklık Oranı: %{typeof topic.frequency === 'number' ? topic.frequency.toFixed(1) : topic.frequency}
                       </div>
                     </div>
                   </div>

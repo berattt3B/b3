@@ -30,6 +30,7 @@ export interface IStorage {
   createQuestionLog(log: InsertQuestionLog): Promise<QuestionLog>;
   getQuestionLogsByDateRange(startDate: string, endDate: string): Promise<QuestionLog[]>;
   deleteQuestionLog(id: string): Promise<boolean>;
+  deleteAllQuestionLogs(): Promise<boolean>;
   
   // Topic statistics operations
   getTopicStats(): Promise<Array<{ topic: string; wrongMentions: number; totalSessions: number; mentionFrequency: number }>>;
@@ -40,6 +41,7 @@ export interface IStorage {
   getExamResults(): Promise<ExamResult[]>;
   createExamResult(result: InsertExamResult): Promise<ExamResult>;
   deleteExamResult(id: string): Promise<boolean>;
+  deleteAllExamResults(): Promise<boolean>;
   
   // Flashcard operations
   getFlashcards(): Promise<Flashcard[]>;
@@ -367,6 +369,11 @@ export class MemStorage implements IStorage {
   async deleteQuestionLog(id: string): Promise<boolean> {
     return this.questionLogs.delete(id);
   }
+
+  async deleteAllQuestionLogs(): Promise<boolean> {
+    this.questionLogs.clear();
+    return true;
+  }
   
   // Exam result operations
   async getExamResults(): Promise<ExamResult[]> {
@@ -398,6 +405,12 @@ export class MemStorage implements IStorage {
       await this.deleteExamSubjectNetsByExamId(id);
     }
     return deleted;
+  }
+
+  async deleteAllExamResults(): Promise<boolean> {
+    this.examResults.clear();
+    this.examSubjectNets.clear(); // Also clear all subject nets
+    return true;
   }
   
   // Flashcard operations

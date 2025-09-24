@@ -764,6 +764,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.delete("/api/question-logs/all", async (req, res) => {
+    try {
+      await storage.deleteAllQuestionLogs();
+      res.json({ message: "All question logs deleted" });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete all question logs" });
+    }
+  });
+
   // Topic statistics routes
   app.get("/api/topics/stats", async (req, res) => {
     try {
@@ -889,6 +898,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ message: "Failed to delete exam result" });
+    }
+  });
+
+  app.delete("/api/exam-results/all", async (req, res) => {
+    try {
+      await storage.deleteAllExamResults();
+      res.json({ message: "All exam results deleted" });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete all exam results" });
     }
   });
 
