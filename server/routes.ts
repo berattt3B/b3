@@ -275,36 +275,90 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Weather API - Static weather data for Sakarya, Serdivan
+  // Weather API - Real OpenWeather API integration for Sakarya, Serdivan
   app.get("/api/weather", async (req, res) => {
     try {
-      // Static weather data - no external API dependency
-      const currentData = {
-        main: { 
-          temp: 18, 
-          temp_max: 20, 
-          temp_min: 15, 
-          humidity: 75, 
-          pressure: 1013,
-          feels_like: 18
-        },
-        weather: [{ id: 800, description: "açık", main: "Clear" }],
-        wind: { speed: 2.5, deg: 180 },
-        clouds: { all: 20 },
-        visibility: 10000,
-        sys: { 
-          sunrise: Math.floor(new Date().setHours(5, 54, 0, 0) / 1000), 
-          sunset: Math.floor(new Date().setHours(18, 53, 0, 0) / 1000)
-        },
-        rain: undefined,
-        snow: undefined
-      } as any;
-
-      const forecastData = { list: [] }; // Empty forecast data as we'll use custom
-      const airQualityData = {
-        list: [{ main: { aqi: 2 }, components: { pm2_5: 15, pm10: 25, o3: 60 } }]
-      };
-      const uvData = { value: 4 };
+      const OPENWEATHER_API_KEY = process.env.OPENWEATHER_API_KEY;
+      
+      let currentData, forecastData, airQualityData, uvData;
+      
+      if (!OPENWEATHER_API_KEY) {
+        console.log("OpenWeather API key not found, using static data");
+        // Fallback to static weather data if API key not configured
+        currentData = {
+          main: { 
+            temp: 18, 
+            temp_max: 20, 
+            temp_min: 15, 
+            humidity: 75, 
+            pressure: 1013,
+            feels_like: 18
+          },
+          weather: [{ id: 800, description: "açık", main: "Clear" }],
+          wind: { speed: 2.5, deg: 180 },
+          clouds: { all: 20 },
+          visibility: 10000,
+          sys: { 
+            sunrise: Math.floor(new Date().setHours(5, 54, 0, 0) / 1000), 
+            sunset: Math.floor(new Date().setHours(18, 53, 0, 0) / 1000)
+          },
+          rain: undefined,
+          snow: undefined
+        } as any;
+        forecastData = { list: [] };
+        airQualityData = {
+          list: [{ main: { aqi: 2 }, components: { pm2_5: 15, pm10: 25, o3: 60 } }]
+        };
+        uvData = { value: 4 };
+      } else {
+        // Real OpenWeather API calls for Sakarya, Serdivan (lat: 40.7969, lon: 30.3781)
+        const lat = 40.7969;
+        const lon = 30.3781;
+        
+        try {
+          // Current weather
+          const currentResponse = await fetch(
+            `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${OPENWEATHER_API_KEY}&units=metric&lang=tr`
+          );
+          currentData = await currentResponse.json();
+          
+          // 5-day forecast
+          const forecastResponse = await fetch(
+            `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&appid=${OPENWEATHER_API_KEY}&units=metric&lang=tr`
+          );
+          forecastData = await forecastResponse.json();
+          
+          // Air quality
+          const airQualityResponse = await fetch(
+            `https://api.openweathermap.org/data/2.5/air_pollution?lat=${lat}&lon=${lon}&appid=${OPENWEATHER_API_KEY}`
+          );
+          airQualityData = await airQualityResponse.json();
+          
+          // UV Index
+          const uvResponse = await fetch(
+            `https://api.openweathermap.org/data/2.5/uvi?lat=${lat}&lon=${lon}&appid=${OPENWEATHER_API_KEY}`
+          );
+          uvData = await uvResponse.json();
+          
+        } catch (apiError) {
+          console.error("OpenWeather API error, falling back to static data:", apiError);
+          // Use static data as fallback
+          currentData = {
+            main: { temp: 18, temp_max: 20, temp_min: 15, humidity: 75, pressure: 1013, feels_like: 18 },
+            weather: [{ id: 800, description: "açık", main: "Clear" }],
+            wind: { speed: 2.5, deg: 180 },
+            clouds: { all: 20 },
+            visibility: 10000,
+            sys: { 
+              sunrise: Math.floor(new Date().setHours(5, 54, 0, 0) / 1000), 
+              sunset: Math.floor(new Date().setHours(18, 53, 0, 0) / 1000)
+            }
+          };
+          forecastData = { list: [] };
+          airQualityData = { list: [{ main: { aqi: 2 }, components: { pm2_5: 15, pm10: 25, o3: 60 } }] };
+          uvData = { value: 4 };
+        }
+      }
 
       // Helper function to get weather emoji
       const getWeatherEmoji = (weatherId: number, isDay: boolean = true) => {
