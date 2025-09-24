@@ -293,28 +293,129 @@ export function QuestionAnalysisCharts() {
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-        {/* Topic Success Rate Chart - Content Removed */}
+        {/* Topic Success Rate Chart */}
         <div className="bg-gradient-to-br from-card via-card to-card/80 rounded-xl border border-border shadow-lg p-6 transition-all duration-300 hover:shadow-xl">
           <h3 className="text-xl font-semibold text-foreground mb-6 flex items-center">
             <Target className="h-6 w-6 mr-3 text-amber-500" />
             📊 Ders Başarı Oranları
           </h3>
-          <div className="text-center py-8 text-muted-foreground">
-            <Target className="h-12 w-12 mx-auto mb-3 opacity-40" />
-            <p className="text-sm">Henüz yeterli veri yok</p>
-          </div>
+          {topicSuccessData.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <Target className="h-12 w-12 mx-auto mb-3 opacity-40" />
+              <p className="text-sm">Henüz yeterli veri yok</p>
+              <p className="text-xs mt-1">En az 5 soru çözülen dersler gösterilir</p>
+            </div>
+          ) : (
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={topicSuccessData}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ subject, successRate }) => `${subject}: ${successRate}%`}
+                    outerRadius={80}
+                    fill="#8884d8"
+                    dataKey="successRate"
+                  >
+                    {topicSuccessData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={pieColors[index % pieColors.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: 'hsl(var(--card))',
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '8px',
+                      fontSize: '12px'
+                    }}
+                    formatter={(value, name, props) => [
+                      `${value}%`,
+                      `Başarı: ${props.payload.correct}/${props.payload.attempted}`
+                    ]}
+                  />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          )}
         </div>
 
-        {/* Daily Question Heatmap - Content Removed */}
+        {/* Daily Question Heatmap */}
         <div className="bg-gradient-to-br from-card via-card to-card/80 rounded-xl border border-border shadow-lg p-6 transition-all duration-300 hover:shadow-xl">
           <h3 className="text-xl font-semibold text-foreground mb-6 flex items-center">
             <Calendar className="h-6 w-6 mr-3 text-green-500" />
             🔥 Çalışma Heatmap
           </h3>
-          <div className="text-center py-8 text-muted-foreground">
-            <Calendar className="h-12 w-12 mx-auto mb-3 opacity-40" />
-            <p className="text-sm">Henüz yeterli veri yok</p>
-          </div>
+          {heatmapData.length === 0 || heatmapData.every(d => d.count === 0) ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <Calendar className="h-12 w-12 mx-auto mb-3 opacity-40" />
+              <p className="text-sm">Henüz yeterli veri yok</p>
+              <p className="text-xs mt-1">Son 90 günlük aktivite haritası</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {/* Heatmap Grid - Github style */}
+              <div className="grid grid-cols-15 gap-1 text-xs" data-testid="heatmap-grid">
+                {heatmapData.map((day, index) => {
+                  const intensity = day.intensity;
+                  const bgColor = 
+                    intensity === 0 ? 'bg-muted/20' :
+                    intensity <= 0.2 ? 'bg-green-200/60' :
+                    intensity <= 0.4 ? 'bg-green-300/70' :
+                    intensity <= 0.6 ? 'bg-green-400/80' :
+                    intensity <= 0.8 ? 'bg-green-500/90' :
+                    'bg-green-600';
+                  
+                  return (
+                    <div
+                      key={index}
+                      className={`w-3 h-3 rounded-sm ${bgColor} hover:scale-125 transition-all duration-200 cursor-pointer`}
+                      title={`${day.date}: ${day.count} soru`}
+                      data-testid={`heatmap-cell-${day.date}`}
+                    />
+                  );
+                })}
+              </div>
+              
+              {/* Legend */}
+              <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <span>Az</span>
+                <div className="flex items-center space-x-1">
+                  <div className="w-3 h-3 rounded-sm bg-muted/20"></div>
+                  <div className="w-3 h-3 rounded-sm bg-green-200/60"></div>
+                  <div className="w-3 h-3 rounded-sm bg-green-300/70"></div>
+                  <div className="w-3 h-3 rounded-sm bg-green-400/80"></div>
+                  <div className="w-3 h-3 rounded-sm bg-green-500/90"></div>
+                  <div className="w-3 h-3 rounded-sm bg-green-600"></div>
+                </div>
+                <span>Çok</span>
+              </div>
+              
+              {/* Summary Stats */}
+              <div className="grid grid-cols-3 gap-4 pt-4 border-t border-border">
+                <div className="text-center">
+                  <div className="text-lg font-bold text-green-600">
+                    {heatmapData.filter(d => d.count > 0).length}
+                  </div>
+                  <div className="text-xs text-muted-foreground">Aktif Gün</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-lg font-bold text-blue-600">
+                    {heatmapData.reduce((sum, d) => sum + d.count, 0)}
+                  </div>
+                  <div className="text-xs text-muted-foreground">Toplam Soru</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-lg font-bold text-purple-600">
+                    {Math.round(heatmapData.reduce((sum, d) => sum + d.count, 0) / 90)}
+                  </div>
+                  <div className="text-xs text-muted-foreground">Günlük Ort.</div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
