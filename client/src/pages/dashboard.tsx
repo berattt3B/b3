@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Header } from "@/components/header";
 import { Link, useLocation } from "wouter";
-import { TrendingUp, BarChart3, Target, Brain, BookOpen, Plus, CalendarDays, X, FlaskConical, Trash2, AlertTriangle, Sparkles, Award, Clock, Zap, Edit } from "lucide-react";
+import { TrendingUp, BarChart3, Target, Brain, BookOpen, Plus, CalendarDays, X, FlaskConical, Trash2, AlertTriangle, Sparkles, Award, Clock, Zap, Edit, Search, Tag, BookX, Lightbulb } from "lucide-react";
 import { Task, Goal, QuestionLog, InsertQuestionLog, ExamResult, InsertExamResult } from "@shared/schema";
 import { DashboardSummaryCards } from "@/components/dashboard-summary-cards";
 import { WeeklyActivitySummary } from "@/components/weekly-activity-summary";
@@ -713,42 +713,109 @@ export default function Dashboard() {
               </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium mb-1">Yanlış Konular</label>
-              <div className="space-y-2">
-                <Input
-                  value={wrongTopicInput}
-                  onChange={(e) => setWrongTopicInput(e.target.value)}
-                  placeholder="Konu adı yazın ve Enter'a basın"
-                  onKeyPress={(e) => {
-                    if (e.key === 'Enter' && wrongTopicInput.trim()) {
-                      setNewQuestion({
-                        ...newQuestion, 
-                        wrong_topics: [...newQuestion.wrong_topics, wrongTopicInput.trim()]
-                      });
-                      setWrongTopicInput("");
-                    }
-                  }}
-                />
-                <div className="flex flex-wrap gap-1">
-                  {newQuestion.wrong_topics.map((topic, index) => (
-                    <Badge key={index} variant="secondary" className="text-xs">
-                      {topic}
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-4 w-4 p-0 ml-1"
-                        onClick={() => {
+            {/* Enhanced Wrong Topics Section */}
+            <div className="bg-gradient-to-r from-red-50/50 to-orange-50/50 dark:from-red-900/10 dark:to-orange-900/10 rounded-xl p-6 border border-red-200/30 dark:border-red-700/20">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 bg-gradient-to-br from-red-500 to-orange-600 rounded-lg shadow-md">
+                  <AlertTriangle className="h-5 w-5 text-white" />
+                </div>
+                <div>
+                  <label className="text-lg font-semibold text-red-700 dark:text-red-300">Yanlış Konular</label>
+                  <p className="text-sm text-red-600/70 dark:text-red-400/70">Eksik olan konuları ekleyerek gelişim alanlarınızı belirleyin</p>
+                </div>
+              </div>
+              
+              <div className="space-y-4">
+                <div className="relative">
+                  <Input
+                    value={wrongTopicInput}
+                    onChange={(e) => setWrongTopicInput(e.target.value)}
+                    placeholder="Konu adını yazın ve Enter'a basın..."
+                    className="pl-10 pr-16 h-12 text-base bg-white/80 dark:bg-gray-800/80 border-red-200 dark:border-red-700/50 focus:border-red-400 dark:focus:border-red-500 rounded-xl shadow-sm"
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter' && wrongTopicInput.trim()) {
+                        setNewQuestion({
+                          ...newQuestion, 
+                          wrong_topics: [...newQuestion.wrong_topics, wrongTopicInput.trim()]
+                        });
+                        setWrongTopicInput("");
+                      }
+                    }}
+                    data-testid="input-wrong-topics"
+                  />
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-red-400 dark:text-red-500" />
+                  {wrongTopicInput.trim() && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="absolute right-2 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-100 dark:hover:bg-red-900/30"
+                      onClick={() => {
+                        if (wrongTopicInput.trim()) {
                           setNewQuestion({
-                            ...newQuestion,
-                            wrong_topics: newQuestion.wrong_topics.filter((_, i) => i !== index)
+                            ...newQuestion, 
+                            wrong_topics: [...newQuestion.wrong_topics, wrongTopicInput.trim()]
                           });
-                        }}
-                      >
-                        <X className="h-3 w-3" />
-                      </Button>
-                    </Badge>
-                  ))}
+                          setWrongTopicInput("");
+                        }
+                      }}
+                      data-testid="button-add-topic"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+
+                {/* Enhanced Topic Tags Display */}
+                {newQuestion.wrong_topics.length > 0 && (
+                  <div>
+                    <div className="flex items-center gap-2 mb-3">
+                      <Tag className="h-4 w-4 text-red-600 dark:text-red-400" />
+                      <span className="text-sm font-medium text-red-700 dark:text-red-300">
+                        Eklenen Konular ({newQuestion.wrong_topics.length})
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {newQuestion.wrong_topics.map((topic, index) => (
+                        <div
+                          key={index}
+                          className="group flex items-center gap-2 bg-gradient-to-r from-red-100 to-orange-100 dark:from-red-900/40 dark:to-orange-900/40 border border-red-200 dark:border-red-700/50 rounded-lg px-3 py-2 transition-all duration-200 hover:shadow-md hover:scale-105"
+                          data-testid={`topic-tag-${index}`}
+                        >
+                          <BookX className="h-3 w-3 text-red-600 dark:text-red-400" />
+                          <span className="text-sm font-medium text-red-700 dark:text-red-300 select-none">
+                            {topic}
+                          </span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-5 w-5 p-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-red-500 hover:text-red-700 hover:bg-red-200 dark:hover:bg-red-800/50 rounded-full"
+                            onClick={() => {
+                              setNewQuestion({
+                                ...newQuestion,
+                                wrong_topics: newQuestion.wrong_topics.filter((_, i) => i !== index)
+                              });
+                            }}
+                            data-testid={`button-remove-topic-${index}`}
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Helper Text */}
+                <div className="flex items-start gap-2 p-3 bg-red-50/50 dark:bg-red-900/20 rounded-lg border border-red-200/50 dark:border-red-700/30">
+                  <Lightbulb className="h-4 w-4 text-red-500 dark:text-red-400 mt-0.5 flex-shrink-0" />
+                  <div className="text-sm text-red-600/80 dark:text-red-400/80">
+                    <p className="font-medium mb-1">💡 İpucu:</p>
+                    <ul className="space-y-1 text-xs">
+                      <li>• Spesifik konu başlıklarını ekleyin (örn: "İkinci Dereceden Denklemler")</li>
+                      <li>• Her yanlış konu için ayrı etiket oluşturun</li>
+                      <li>• Daha sonra bu konular üzerinde odaklanarak çalışabilirsiniz</li>
+                    </ul>
+                  </div>
                 </div>
               </div>
             </div>
