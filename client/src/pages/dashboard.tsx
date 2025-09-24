@@ -239,16 +239,15 @@ export default function Dashboard() {
     }
   };
 
-  // Generate GitHub-style yearly heatmap data 
+  // Generate GitHub-style yearly heatmap data (today is the last box)
   const generateYearlyHeatmapData = () => {
     const data = [];
     const today = new Date();
-    const startDate = new Date(today);
-    startDate.setDate(today.getDate() - 364); // Start from 365 days ago
     
-    for (let i = 0; i < 365; i++) {
-      const date = new Date(startDate);
-      date.setDate(startDate.getDate() + i);
+    // Generate 365 days ending with today
+    for (let i = 364; i >= 0; i--) {
+      const date = new Date(today);
+      date.setDate(today.getDate() - i); // Go back i days from today
       const dateStr = date.toISOString().split('T')[0];
       
       // Calculate activity intensity for this day
@@ -269,7 +268,8 @@ export default function Dashboard() {
         intensity: studyIntensity,
         count: dayQuestions.length + dayTasks.length,
         questionCount: dayQuestions.length,
-        taskCount: dayTasks.length
+        taskCount: dayTasks.length,
+        isToday: i === 0 // Mark today's box
       });
     }
     return data;
@@ -460,17 +460,25 @@ export default function Dashboard() {
                   {/* Month labels */}
                   <div className="flex mb-2">
                   <div className="w-6"></div> {/* Space for day labels */}
-                  {Array.from({ length: 12 }, (_, monthIndex) => {
+                  {(() => {
                     const monthNames = [
                       'Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz',
                       'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'
                     ];
-                    return (
-                      <div key={monthIndex} className="text-xs text-muted-foreground" style={{ width: '52px', textAlign: 'left' }}>
-                        {monthNames[monthIndex]}
-                      </div>
-                    );
-                  })}
+                    const currentMonth = new Date().getMonth();
+                    const months = [];
+                    
+                    // Generate 12 months starting from 12 months ago, ending with current month
+                    for (let i = 11; i >= 0; i--) {
+                      const monthIndex = (currentMonth - i + 12) % 12;
+                      months.push(
+                        <div key={`month-${i}`} className="text-xs text-muted-foreground" style={{ width: '52px', textAlign: 'left' }}>
+                          {monthNames[monthIndex]}
+                        </div>
+                      );
+                    }
+                    return months;
+                  })()}
                 </div>
                 
                 {/* Heatmap grid */}
@@ -505,14 +513,18 @@ export default function Dashboard() {
                             <div
                               key={dayIndex}
                               className={`w-3 h-3 rounded-sm border transition-all duration-200 hover:scale-125 cursor-pointer ${
-                                day.intensity === 0 
-                                  ? 'bg-gray-100 dark:bg-gray-800 border-gray-200 dark:border-gray-700' 
-                                  : 'border-purple-300 dark:border-purple-600'
+                                day.isToday 
+                                  ? 'border-2 border-orange-400 dark:border-orange-300 shadow-lg shadow-orange-200 dark:shadow-orange-900' 
+                                  : day.intensity === 0 
+                                    ? 'bg-gray-100 dark:bg-gray-800 border-gray-200 dark:border-gray-700' 
+                                    : 'border-purple-300 dark:border-purple-600'
                               }`}
                               style={{
-                                backgroundColor: day.intensity > 0 ? `rgba(147, 51, 234, ${opacity})` : undefined
+                                backgroundColor: day.isToday 
+                                  ? (day.intensity > 0 ? `rgba(249, 115, 22, 0.8)` : `rgba(249, 115, 22, 0.2)`)
+                                  : day.intensity > 0 ? `rgba(147, 51, 234, ${opacity})` : undefined
                               }}
-                              title={`${day.date}: ${day.count} aktivite (${day.questionCount} soru, ${day.taskCount} görev)`}
+                              title={`${day.date}${day.isToday ? ' (BUGÜN)' : ''}: ${day.count} aktivite (${day.questionCount} soru, ${day.taskCount} görev)`}
                               onClick={() => handleHeatmapDayClick(day)}
                             />
                           );
