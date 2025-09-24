@@ -174,117 +174,198 @@ export function QuestionAnalysisCharts() {
 
   return (
     <div className="space-y-6 mb-8">
-      {/* Daily/Weekly Questions Chart */}
-      <div className="bg-card rounded-xl border border-border p-6 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-green-500/5 to-blue-500/5 rounded-full blur-3xl"></div>
+      {/* Enhanced Daily/Weekly Questions Chart */}
+      <div className="bg-gradient-to-br from-emerald-50/60 via-card to-blue-50/40 dark:from-emerald-950/30 dark:via-card dark:to-blue-950/25 rounded-2xl border-2 border-emerald-200/40 dark:border-emerald-800/40 p-8 relative overflow-hidden shadow-2xl backdrop-blur-sm">
+        <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-emerald-500/10 to-blue-500/10 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute -bottom-8 -left-8 w-32 h-32 bg-gradient-to-tr from-blue-500/10 to-emerald-500/10 rounded-full blur-2xl"></div>
         <div className="relative">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center">
-              <BookOpen className="h-5 w-5 mr-2 text-green-600" />
-              <h3 className="text-lg font-semibold text-foreground">
-                {viewMode === 'daily' ? 'Günlük' : 'Haftalık'} Soru Çözüm Analizi
-              </h3>
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center space-x-3">
+              <div className="p-3 bg-gradient-to-br from-emerald-500 via-blue-500 to-emerald-600 rounded-xl shadow-lg">
+                <BookOpen className="h-6 w-6 text-white drop-shadow-lg" />
+              </div>
+              <div>
+                <h3 className="text-2xl font-bold bg-gradient-to-r from-emerald-600 via-blue-600 to-emerald-700 bg-clip-text text-transparent">
+                  📚 {viewMode === 'daily' ? 'Günlük' : 'Haftalık'} Soru Çözüm Analizi
+                </h3>
+                <p className="text-sm text-emerald-600/70 dark:text-emerald-400/70 font-medium">
+                  Soru çözme performansı ve gelişim takibi
+                </p>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              <div className="flex border border-border rounded-lg p-1">
+            <div className="flex items-center gap-3">
+              <div className="flex border-2 border-emerald-200/50 dark:border-emerald-700/50 rounded-xl p-1 bg-white/60 dark:bg-gray-900/60 backdrop-blur-sm">
                 <Button
                   variant={viewMode === 'daily' ? 'default' : 'ghost'}
                   size="sm"
                   onClick={() => setViewMode('daily')}
-                  className="text-xs px-3 py-1.5 h-auto"
+                  className={`text-sm px-4 py-2 h-auto font-medium transition-all duration-200 rounded-lg ${
+                    viewMode === 'daily'
+                      ? 'bg-gradient-to-r from-emerald-500 to-blue-500 text-white shadow-lg hover:shadow-xl'
+                      : 'hover:bg-emerald-50 dark:hover:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300'
+                  }`}
                   data-testid="button-daily-view"
                 >
-                  Günlük
+                  📅 Günlük
                 </Button>
                 <Button
                   variant={viewMode === 'weekly' ? 'default' : 'ghost'}
                   size="sm"
                   onClick={() => setViewMode('weekly')}
-                  className="text-xs px-3 py-1.5 h-auto"
+                  className={`text-sm px-4 py-2 h-auto font-medium transition-all duration-200 rounded-lg ${
+                    viewMode === 'weekly'
+                      ? 'bg-gradient-to-r from-emerald-500 to-blue-500 text-white shadow-lg hover:shadow-xl'
+                      : 'hover:bg-emerald-50 dark:hover:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300'
+                  }`}
                   data-testid="button-weekly-view"
                 >
-                  Haftalık
+                  🗓️ Haftalık
                 </Button>
               </div>
-              <div className="text-xs text-muted-foreground">
+              <div className="text-sm text-muted-foreground bg-emerald-100/60 dark:bg-emerald-900/30 px-4 py-2 rounded-full border border-emerald-200/50 dark:border-emerald-700/50 font-medium">
                 {viewMode === 'daily' ? 'Son 14 gün' : 'Son 8 hafta'}
               </div>
             </div>
           </div>
           
           {dailyWeeklyData.length === 0 || dailyWeeklyData.every(d => d.totalQuestions === 0) ? (
-            <div className="text-center py-16 text-muted-foreground">
-              <BookOpen className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p className="text-sm">Soru çözüm verisi bulunmuyor</p>
-              <p className="text-xs mt-1">Soru kayıtları ekleyerek analizi görüntüleyin</p>
+            <div className="text-center py-20 text-muted-foreground">
+              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-emerald-100 to-blue-100 dark:from-emerald-900/30 dark:to-blue-900/30 flex items-center justify-center mx-auto mb-6 shadow-lg">
+                <BookOpen className="h-10 w-10 text-emerald-500" />
+              </div>
+              <h4 className="text-lg font-semibold text-emerald-700 dark:text-emerald-300 mb-2">Soru çözüm verisi bulunmuyor</h4>
+              <p className="text-sm opacity-75 mb-4">Soru kayıtları ekleyerek analizi görüntüleyin</p>
+              <div className="flex justify-center space-x-1">
+                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-bounce"></div>
+                <div className="w-2 h-2 rounded-full bg-blue-500 animate-bounce delay-100"></div>
+                <div className="w-2 h-2 rounded-full bg-emerald-600 animate-bounce delay-200"></div>
+              </div>
             </div>
           ) : (
             <>
-              <div className="h-80 mb-4">
+              <div className="h-80 mb-6">
                 <ResponsiveContainer width="100%" height="100%">
-                  <ComposedChart data={dailyWeeklyData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                    <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+                  <ComposedChart data={dailyWeeklyData} margin={{ top: 20, right: 40, left: 20, bottom: 10 }}>
+                    <CartesianGrid strokeDasharray="3 3" className="opacity-30" stroke="currentColor" />
                     <XAxis 
                       dataKey="dayName" 
                       className="text-xs text-muted-foreground"
-                      tick={{ fontSize: 11 }}
+                      tick={{ fontSize: 11, fontWeight: 500 }}
                       stroke="currentColor"
+                      axisLine={{ stroke: 'currentColor', strokeWidth: 1 }}
                     />
                     <YAxis 
                       yAxisId="questions"
                       className="text-xs text-muted-foreground"
-                      tick={{ fontSize: 11 }}
+                      tick={{ fontSize: 11, fontWeight: 500 }}
                       stroke="currentColor"
+                      axisLine={{ stroke: 'currentColor', strokeWidth: 1 }}
+                      label={{ value: 'Soru Sayısı', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle' } }}
                     />
                     <YAxis 
                       yAxisId="percentage"
                       orientation="right"
                       className="text-xs text-muted-foreground"
-                      tick={{ fontSize: 11 }}
+                      tick={{ fontSize: 11, fontWeight: 500 }}
                       stroke="currentColor"
+                      axisLine={{ stroke: 'currentColor', strokeWidth: 1 }}
                       domain={[0, 100]}
+                      label={{ value: 'Başarı %', angle: 90, position: 'insideRight', style: { textAnchor: 'middle' } }}
                     />
                     <Tooltip
                       contentStyle={{
                         backgroundColor: 'hsl(var(--card))',
                         border: '1px solid hsl(var(--border))',
-                        borderRadius: '8px',
-                        fontSize: '12px'
+                        borderRadius: '12px',
+                        fontSize: '13px',
+                        boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
+                        padding: '12px'
                       }}
-                      formatter={(value, name) => [
-                        name === 'successRate' ? `${value}%` : value,
-                        name === 'correctQuestions' ? 'Doğru' : 
-                        name === 'wrongQuestions' ? 'Yanlış' : 
-                        name === 'successRate' ? 'Başarı Oranı' :
-                        name === 'totalQuestions' ? 'Toplam' : name
+                      formatter={(value: any, name: any) => [
+                        name === 'successRate' ? `%${value}` : `${value} soru`,
+                        name === 'correctQuestions' ? '✅ Doğru' : 
+                        name === 'wrongQuestions' ? '❌ Yanlış' : 
+                        name === 'successRate' ? '📈 Başarı Oranı' :
+                        name === 'totalQuestions' ? '📊 Toplam' : name
                       ]}
+                      labelFormatter={(label) => `📅 ${label}`}
                     />
-                    <Legend />
-                    <Bar yAxisId="questions" dataKey="correctQuestions" stackId="a" fill="#10b981" name="Doğru" radius={[0, 0, 0, 0]} />
-                    <Bar yAxisId="questions" dataKey="wrongQuestions" stackId="a" fill="#ef4444" name="Yanlış" radius={[4, 4, 0, 0]} />
-                    <Line yAxisId="percentage" type="monotone" dataKey="successRate" stroke="#3b82f6" strokeWidth={3} dot={{ r: 4, fill: "#3b82f6" }} name="Başarı Oranı (%)" />
+                    <Legend 
+                      wrapperStyle={{ paddingTop: '20px' }}
+                      iconType="rect"
+                    />
+                    
+                    {/* Enhanced bars with gradients */}
+                    <Bar 
+                      yAxisId="questions" 
+                      dataKey="correctQuestions" 
+                      stackId="a" 
+                      fill="url(#correctGradient)" 
+                      name="Doğru" 
+                      radius={[0, 0, 0, 0]} 
+                    />
+                    <Bar 
+                      yAxisId="questions" 
+                      dataKey="wrongQuestions" 
+                      stackId="a" 
+                      fill="url(#wrongGradient)" 
+                      name="Yanlış" 
+                      radius={[4, 4, 0, 0]} 
+                    />
+                    
+                    {/* Enhanced success rate line */}
+                    <Line 
+                      yAxisId="percentage" 
+                      type="monotone" 
+                      dataKey="successRate" 
+                      stroke="url(#successGradient)" 
+                      strokeWidth={4} 
+                      dot={{ r: 5, fill: "#3b82f6", strokeWidth: 2, stroke: '#ffffff' }} 
+                      activeDot={{ r: 7, stroke: '#3b82f6', strokeWidth: 3, fill: '#ffffff' }}
+                      name="Başarı Oranı (%)" 
+                    />
+                    
+                    {/* Gradient Definitions */}
+                    <defs>
+                      <linearGradient id="correctGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" stopColor="#10b981" />
+                        <stop offset="100%" stopColor="#059669" />
+                      </linearGradient>
+                      <linearGradient id="wrongGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" stopColor="#ef4444" />
+                        <stop offset="100%" stopColor="#dc2626" />
+                      </linearGradient>
+                      <linearGradient id="successGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" stopColor="#3b82f6" />
+                        <stop offset="100%" stopColor="#1d4ed8" />
+                      </linearGradient>
+                    </defs>
                   </ComposedChart>
                 </ResponsiveContainer>
               </div>
               
-              <div className="grid grid-cols-3 gap-4 text-center pt-4 border-t border-border">
-                <div>
-                  <div className="text-lg font-bold text-green-600">
+              {/* Enhanced Summary Statistics */}
+              <div className="grid grid-cols-3 gap-6 pt-6 border-t-2 border-emerald-200/30 dark:border-emerald-700/30">
+                <div className="text-center bg-white/40 dark:bg-gray-900/40 rounded-xl p-4 backdrop-blur-sm border border-emerald-200/30 dark:border-emerald-700/30 shadow-lg">
+                  <div className="text-2xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent mb-1">
                     {dailyWeeklyData.reduce((sum, d) => sum + d.correctQuestions, 0)}
                   </div>
-                  <div className="text-xs text-muted-foreground">Toplam Doğru</div>
+                  <div className="text-sm text-muted-foreground font-medium">✅ Toplam Doğru</div>
+                  <div className="w-8 h-1 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full mx-auto mt-2"></div>
                 </div>
-                <div>
-                  <div className="text-lg font-bold text-foreground">
+                <div className="text-center bg-white/40 dark:bg-gray-900/40 rounded-xl p-4 backdrop-blur-sm border border-emerald-200/30 dark:border-emerald-700/30 shadow-lg">
+                  <div className="text-2xl font-bold bg-gradient-to-r from-emerald-600 to-blue-600 bg-clip-text text-transparent mb-1">
                     {dailyWeeklyData.reduce((sum, d) => sum + d.totalQuestions, 0)}
                   </div>
-                  <div className="text-xs text-muted-foreground">Toplam Soru</div>
+                  <div className="text-sm text-muted-foreground font-medium">📊 Toplam Soru</div>
+                  <div className="w-8 h-1 bg-gradient-to-r from-emerald-500 to-blue-500 rounded-full mx-auto mt-2"></div>
                 </div>
-                <div>
-                  <div className="text-lg font-bold text-blue-600">
+                <div className="text-center bg-white/40 dark:bg-gray-900/40 rounded-xl p-4 backdrop-blur-sm border border-emerald-200/30 dark:border-emerald-700/30 shadow-lg">
+                  <div className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-1">
                     {Math.round(dailyWeeklyData.reduce((sum, d) => sum + d.successRate, 0) / dailyWeeklyData.filter(d => d.totalQuestions > 0).length) || 0}%
                   </div>
-                  <div className="text-xs text-muted-foreground">Ortalama Başarı</div>
+                  <div className="text-sm text-muted-foreground font-medium">📈 Ortalama Başarı</div>
+                  <div className="w-8 h-1 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full mx-auto mt-2"></div>
                 </div>
               </div>
             </>
