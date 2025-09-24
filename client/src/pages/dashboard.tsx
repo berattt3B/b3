@@ -272,12 +272,12 @@ export default function Dashboard() {
       
       const studyIntensity = Math.min((dayQuestions.length * 2 + dayTasks.length) / 10, 1);
       
-      // Check if this is today - Fix timezone issues
+      // Check if this is today - Fix timezone issues with proper date comparison
       const today_fixed = new Date();
-      today_fixed.setHours(0, 0, 0, 0);
+      today_fixed.setHours(23, 59, 59, 999); // Set to end of today for proper comparison
       const currentDate_fixed = new Date(currentDate);
-      currentDate_fixed.setHours(0, 0, 0, 0);
-      const isToday = currentDate_fixed.getTime() === today_fixed.getTime();
+      currentDate_fixed.setHours(23, 59, 59, 999);
+      const isToday = currentDate_fixed.toDateString() === new Date().toDateString();
       
       data.push({
         date: dateStr,
