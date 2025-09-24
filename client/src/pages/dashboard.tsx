@@ -52,10 +52,17 @@ export default function Dashboard() {
     wrong_count: "", 
     blank_count: "", 
     study_date: new Date().toISOString().split('T')[0],
-    wrong_topics: [] as string[],
+    wrong_topics: [] as Array<{
+      topic: string;
+      difficulty: 'kolay' | 'orta' | 'zor';
+      category: 'kavram' | 'hesaplama' | 'analiz' | 'dikkatsizlik';
+      notes?: string;
+    }>,
     time_spent_minutes: ""
   });
   const [wrongTopicInput, setWrongTopicInput] = useState("");
+  const [selectedTopicDifficulty, setSelectedTopicDifficulty] = useState<'kolay' | 'orta' | 'zor'>('orta');
+  const [selectedTopicCategory, setSelectedTopicCategory] = useState<'kavram' | 'hesaplama' | 'analiz' | 'dikkatsizlik'>('kavram');
   const [showExamDialog, setShowExamDialog] = useState(false);
   const [newExamResult, setNewExamResult] = useState({ 
     exam_name: "", 
@@ -1043,17 +1050,49 @@ export default function Dashboard() {
 
             {/* Enhanced Wrong Topics Section */}
             <div className="bg-gradient-to-r from-red-50/50 to-orange-50/50 dark:from-red-900/10 dark:to-orange-900/10 rounded-xl p-6 border border-red-200/30 dark:border-red-700/20">
-              <div className="flex items-center gap-3 mb-4">
+              <div className="flex items-center gap-3 mb-6">
                 <div className="p-2 bg-gradient-to-br from-red-500 to-orange-600 rounded-lg shadow-md">
                   <AlertTriangle className="h-5 w-5 text-white" />
                 </div>
                 <div>
-                  <label className="text-lg font-semibold text-red-700 dark:text-red-300">Yanlış Konular</label>
-                  <p className="text-sm text-red-600/70 dark:text-red-400/70">Eksik olan konuları ekleyerek gelişim alanlarınızı belirleyin</p>
+                  <label className="text-lg font-semibold text-red-700 dark:text-red-300">🔍 Yanlış Konu Analizi</label>
+                  <p className="text-sm text-red-600/70 dark:text-red-400/70">Detaylı hata analizi ile eksik konuları belirleyin</p>
                 </div>
               </div>
               
-              <div className="space-y-4">
+              <div className="space-y-6">
+                {/* Category and Difficulty Selection */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-red-700 dark:text-red-300 mb-2">Hata Kategorisi</label>
+                    <Select value={selectedTopicCategory} onValueChange={(value) => setSelectedTopicCategory(value as any)}>
+                      <SelectTrigger className="bg-white/80 dark:bg-gray-800/80 border-red-200 dark:border-red-700/50">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="kavram">🧠 Kavram Eksikliği</SelectItem>
+                        <SelectItem value="hesaplama">🔢 Hesaplama Hatası</SelectItem>
+                        <SelectItem value="analiz">🔍 Analiz Sorunu</SelectItem>
+                        <SelectItem value="dikkatsizlik">⚠️ Dikkatsizlik</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-red-700 dark:text-red-300 mb-2">Zorluk Derecesi</label>
+                    <Select value={selectedTopicDifficulty} onValueChange={(value) => setSelectedTopicDifficulty(value as any)}>
+                      <SelectTrigger className="bg-white/80 dark:bg-gray-800/80 border-red-200 dark:border-red-700/50">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="kolay">🟢 Kolay</SelectItem>
+                        <SelectItem value="orta">🟡 Orta</SelectItem>
+                        <SelectItem value="zor">🔴 Zor</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                {/* Enhanced Topic Input */}
                 <div className="relative">
                   <Input
                     value={wrongTopicInput}
@@ -1064,7 +1103,11 @@ export default function Dashboard() {
                       if (e.key === 'Enter' && wrongTopicInput.trim()) {
                         setNewQuestion({
                           ...newQuestion, 
-                          wrong_topics: [...newQuestion.wrong_topics, wrongTopicInput.trim()]
+                          wrong_topics: [...newQuestion.wrong_topics, {
+                            topic: wrongTopicInput.trim(),
+                            difficulty: selectedTopicDifficulty,
+                            category: selectedTopicCategory
+                          }]
                         });
                         setWrongTopicInput("");
                       }
@@ -1081,7 +1124,11 @@ export default function Dashboard() {
                         if (wrongTopicInput.trim()) {
                           setNewQuestion({
                             ...newQuestion, 
-                            wrong_topics: [...newQuestion.wrong_topics, wrongTopicInput.trim()]
+                            wrong_topics: [...newQuestion.wrong_topics, {
+                              topic: wrongTopicInput.trim(),
+                              difficulty: selectedTopicDifficulty,
+                              category: selectedTopicCategory
+                            }]
                           });
                           setWrongTopicInput("");
                         }
@@ -1096,65 +1143,115 @@ export default function Dashboard() {
                 {/* Enhanced Topic Tags Display */}
                 {newQuestion.wrong_topics.length > 0 && (
                   <div>
-                    <div className="flex items-center gap-2 mb-3">
+                    <div className="flex items-center gap-2 mb-4">
                       <Tag className="h-4 w-4 text-red-600 dark:text-red-400" />
                       <span className="text-sm font-medium text-red-700 dark:text-red-300">
                         Eklenen Konular ({newQuestion.wrong_topics.length})
                       </span>
                     </div>
-                    <div className="flex flex-wrap gap-2">
-                      {newQuestion.wrong_topics.map((topic, index) => (
-                        <div
-                          key={index}
-                          className="group flex items-center gap-2 bg-gradient-to-r from-red-100 to-orange-100 dark:from-red-900/40 dark:to-orange-900/40 border border-red-200 dark:border-red-700/50 rounded-lg px-3 py-2 transition-all duration-200 hover:shadow-md hover:scale-105"
-                          data-testid={`topic-tag-${index}`}
-                        >
-                          <BookX className="h-3 w-3 text-red-600 dark:text-red-400" />
-                          <span className="text-sm font-medium text-red-700 dark:text-red-300 select-none">
-                            {topic}
-                          </span>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-5 w-5 p-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-red-500 hover:text-red-700 hover:bg-red-200 dark:hover:bg-red-800/50 rounded-full"
-                            onClick={() => {
-                              setNewQuestion({
-                                ...newQuestion,
-                                wrong_topics: newQuestion.wrong_topics.filter((_, i) => i !== index)
-                              });
-                            }}
-                            data-testid={`button-remove-topic-${index}`}
+                    <div className="space-y-3">
+                      {newQuestion.wrong_topics.map((topicData, index) => {
+                        const getDifficultyIcon = (difficulty: string) => {
+                          switch(difficulty) {
+                            case 'kolay': return '🟢';
+                            case 'orta': return '🟡';
+                            case 'zor': return '🔴';
+                            default: return '⚪';
+                          }
+                        };
+                        
+                        const getCategoryIcon = (category: string) => {
+                          switch(category) {
+                            case 'kavram': return '🧠';
+                            case 'hesaplama': return '🔢';
+                            case 'analiz': return '🔍';
+                            case 'dikkatsizlik': return '⚠️';
+                            default: return '📝';
+                          }
+                        };
+                        
+                        const getDifficultyBg = (difficulty: string) => {
+                          switch(difficulty) {
+                            case 'kolay': return 'from-green-100 to-emerald-100 dark:from-green-900/40 dark:to-emerald-900/40 border-green-200 dark:border-green-700/50';
+                            case 'orta': return 'from-yellow-100 to-amber-100 dark:from-yellow-900/40 dark:to-amber-900/40 border-yellow-200 dark:border-yellow-700/50';
+                            case 'zor': return 'from-red-100 to-rose-100 dark:from-red-900/40 dark:to-rose-900/40 border-red-200 dark:border-red-700/50';
+                            default: return 'from-gray-100 to-slate-100 dark:from-gray-900/40 dark:to-slate-900/40 border-gray-200 dark:border-gray-700/50';
+                          }
+                        };
+                        
+                        return (
+                          <div
+                            key={index}
+                            className={`group bg-gradient-to-r ${getDifficultyBg(topicData.difficulty)} border rounded-xl p-4 transition-all duration-300 hover:shadow-lg hover:scale-105`}
+                            data-testid={`topic-tag-${index}`}
                           >
-                            <X className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      ))}
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-3 mb-2">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-lg">{getCategoryIcon(topicData.category)}</span>
+                                    <span className="text-lg font-bold text-red-700 dark:text-red-300">
+                                      {topicData.topic}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center gap-1 text-sm">
+                                    <span>{getDifficultyIcon(topicData.difficulty)}</span>
+                                    <span className="capitalize text-muted-foreground">
+                                      {topicData.difficulty}
+                                    </span>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                                  <span className="capitalize">
+                                    {topicData.category === 'kavram' && 'Kavram Eksikliği'}
+                                    {topicData.category === 'hesaplama' && 'Hesaplama Hatası'}
+                                    {topicData.category === 'analiz' && 'Analiz Sorunu'}
+                                    {topicData.category === 'dikkatsizlik' && 'Dikkatsizlik'}
+                                  </span>
+                                </div>
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-red-500 hover:text-red-700 hover:bg-red-200 dark:hover:bg-red-800/50 rounded-full"
+                                onClick={() => {
+                                  setNewQuestion({
+                                    ...newQuestion,
+                                    wrong_topics: newQuestion.wrong_topics.filter((_, i) => i !== index)
+                                  });
+                                }}
+                                data-testid={`button-remove-topic-${index}`}
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 )}
 
-                {/* Modern Topic Preview */}
+                {/* Enhanced Topic Preview */}
                 {wrongTopicInput.trim() && (
                   <div className="p-4 bg-gradient-to-r from-blue-50/50 via-purple-50/30 to-indigo-50/50 dark:from-blue-950/30 dark:via-purple-950/20 dark:to-indigo-950/30 rounded-xl border border-blue-200/40 dark:border-blue-800/40">
                     <div className="flex items-center gap-2 mb-3">
                       <Eye className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                      <span className="text-sm font-medium text-blue-700 dark:text-blue-300">Konu Önizlemesi</span>
+                      <span className="text-sm font-medium text-blue-700 dark:text-blue-300">Önizleme</span>
                     </div>
-                    <div className="flex flex-wrap gap-2">
-                      {wrongTopicInput.split(',').filter(topic => topic.trim()).map((topic, index) => (
-                        <div
-                          key={index}
-                          className="flex items-center gap-2 bg-gradient-to-r from-blue-100 to-purple-100 dark:from-blue-900/40 dark:to-purple-900/40 border border-blue-200 dark:border-blue-700/50 rounded-lg px-3 py-2 transition-all duration-300 hover:shadow-md hover:scale-105 animate-in slide-in-from-left-2"
-                        >
-                          <Tag className="h-3 w-3 text-blue-600 dark:text-blue-400" />
-                          <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
-                            {topic.trim()}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                    <div className="mt-3 text-xs text-blue-600/70 dark:text-blue-400/70">
-                      ✨ Virgülle ayırarak birden fazla konu ekleyebilirsiniz
+                    <div className="flex items-center gap-3 p-3 bg-white/50 dark:bg-gray-800/50 rounded-lg">
+                      <span className="text-lg">
+                        {selectedTopicCategory === 'kavram' && '🧠'}
+                        {selectedTopicCategory === 'hesaplama' && '🔢'}
+                        {selectedTopicCategory === 'analiz' && '🔍'}
+                        {selectedTopicCategory === 'dikkatsizlik' && '⚠️'}
+                      </span>
+                      <span className="font-medium text-gray-700 dark:text-gray-300">{wrongTopicInput.trim()}</span>
+                      <span className="text-sm">
+                        {selectedTopicDifficulty === 'kolay' && '🟢'}
+                        {selectedTopicDifficulty === 'orta' && '🟡'}
+                        {selectedTopicDifficulty === 'zor' && '🔴'}
+                      </span>
                     </div>
                   </div>
                 )}
@@ -1164,6 +1261,11 @@ export default function Dashboard() {
             <div className="flex gap-2">
               <Button
                 onClick={() => {
+                  // Convert enhanced wrong topics to simple string array for backend compatibility
+                  const wrong_topics_converted = newQuestion.wrong_topics.map(topic => 
+                    typeof topic === 'string' ? topic : `${topic.topic} [${topic.category}, ${topic.difficulty}]`
+                  );
+
                   if (editingQuestionLog) {
                     updateQuestionLogMutation.mutate({
                       id: editingQuestionLog.id,
@@ -1174,7 +1276,7 @@ export default function Dashboard() {
                         wrong_count: newQuestion.wrong_count,
                         blank_count: newQuestion.blank_count || "0",
                         study_date: newQuestion.study_date,
-                        wrong_topics: newQuestion.wrong_topics,
+                        wrong_topics: wrong_topics_converted,
                         time_spent_minutes: parseInt(newQuestion.time_spent_minutes) || null
                       }
                     });
@@ -1186,7 +1288,7 @@ export default function Dashboard() {
                       wrong_count: newQuestion.wrong_count,
                       blank_count: newQuestion.blank_count || "0",
                       study_date: newQuestion.study_date,
-                      wrong_topics: newQuestion.wrong_topics,
+                      wrong_topics: wrong_topics_converted,
                       time_spent_minutes: parseInt(newQuestion.time_spent_minutes) || null
                     });
                   }
