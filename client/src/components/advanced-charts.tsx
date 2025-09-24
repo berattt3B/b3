@@ -1,10 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from "recharts";
-import { TrendingUp, Target, Brain, AlertTriangle, BarChart3, Book, Calculator, Atom, FlaskConical, Dna, User, Calendar, TrendingDown } from "lucide-react";
+import { TrendingUp, Target, Brain, AlertTriangle, BarChart3, Book, Calculator, Atom, FlaskConical, Dna, User, Calendar, TrendingDown, Check, CheckCircle } from "lucide-react";
 import { ExamResult, QuestionLog } from "@shared/schema";
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { useToast } from "@/hooks/use-toast";
 
 interface MissingTopic {
   topic: string;
@@ -36,6 +38,9 @@ interface SubjectAnalysisData {
 
 export function AdvancedCharts() {
   const [analysisMode, setAnalysisMode] = useState<'net' | 'subject'>('net');
+  const [completedTopics, setCompletedTopics] = useState<Set<string>>(new Set());
+  const [celebratingTopics, setCelebratingTopics] = useState<Set<string>>(new Set());
+  const { toast } = useToast();
 
   const { data: examResults = [], isLoading: isLoadingExams } = useQuery<ExamResult[]>({
     queryKey: ["/api/exam-results"],
@@ -262,16 +267,60 @@ export function AdvancedCharts() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
               {missingTopics.slice(0, 15).map((topic, index) => (
-                <div key={index} className="bg-white/70 dark:bg-gray-900/70 rounded-2xl p-6 border border-red-200/50 dark:border-red-700/50 hover:shadow-2xl transition-all duration-300 hover:scale-105 backdrop-blur-sm relative overflow-hidden group/card">
-                  <div className="absolute inset-0 bg-gradient-to-br from-red-50/50 to-orange-50/30 dark:from-red-950/20 dark:to-orange-950/10 opacity-0 group-hover/card:opacity-100 transition-opacity duration-300"></div>
+                <div key={index} className={`bg-white/70 dark:bg-gray-900/70 rounded-2xl p-6 border border-red-200/50 dark:border-red-700/50 hover:shadow-2xl transition-all duration-300 hover:scale-105 backdrop-blur-sm relative overflow-hidden group/card ${
+                  celebratingTopics.has(`${topic.subject}-${topic.topic}`) ? 'animate-pulse bg-green-100/80 dark:bg-green-900/40 border-green-300 dark:border-green-600' : ''
+                } ${
+                  completedTopics.has(`${topic.subject}-${topic.topic}`) && !celebratingTopics.has(`${topic.subject}-${topic.topic}`) ? 'opacity-50 transform scale-95' : ''
+                }`}>
+                  <div className={`absolute inset-0 bg-gradient-to-br transition-opacity duration-300 ${
+                    celebratingTopics.has(`${topic.subject}-${topic.topic}`) 
+                      ? 'bg-gradient-to-br from-green-200/60 to-emerald-200/40 dark:from-green-800/40 dark:to-emerald-800/30 opacity-100' 
+                      : 'from-red-50/50 to-orange-50/30 dark:from-red-950/20 dark:to-orange-950/10 opacity-0 group-hover/card:opacity-100'
+                  }`}></div>
                   <div className="relative">
                     <div className="flex items-center justify-between mb-3">
                       <span className="text-base font-bold text-red-700 dark:text-red-300">{topic.subject}</span>
-                      <span className="bg-gradient-to-r from-red-100 to-orange-100 dark:from-red-900/40 dark:to-orange-900/40 text-red-600 dark:text-red-400 text-sm px-3 py-1.5 rounded-full font-semibold shadow-md">
-                        {topic.frequency} Kere
-                      </span>
+                      <div className="flex items-center gap-3">
+                        <Checkbox
+                          checked={completedTopics.has(`${topic.subject}-${topic.topic}`)}
+                          onCheckedChange={(checked) => {
+                            const topicKey = `${topic.subject}-${topic.topic}`;
+                            if (checked) {
+                              setCompletedTopics(prev => new Set([...prev, topicKey]));
+                              setCelebratingTopics(prev => new Set([...prev, topicKey]));
+                              toast({ title: "🎉 Tebrikler!", description: `${topic.topic} konusunu tamamladınız!` });
+                              
+                              // Remove celebrating animation after 3 seconds
+                              setTimeout(() => {
+                                setCelebratingTopics(prev => {
+                                  const newSet = new Set(prev);
+                                  newSet.delete(topicKey);
+                                  return newSet;
+                                });
+                                // Remove completed topic after celebration
+                                setTimeout(() => {
+                                  setCompletedTopics(prev => {
+                                    const newSet = new Set(prev);
+                                    newSet.delete(topicKey);
+                                    return newSet;
+                                  });
+                                }, 500);
+                              }, 3000);
+                            }
+                          }}
+                          className="data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500"
+                        />
+                      </div>
                     </div>
-                    <p className="text-base text-gray-700 dark:text-gray-300 mb-4 font-medium leading-relaxed">{topic.topic}</p>
+                    <div className="flex items-center gap-2 mb-4">
+                      <p className="text-base text-gray-700 dark:text-gray-300 font-medium leading-relaxed flex-1">{topic.topic}</p>
+                      {celebratingTopics.has(`${topic.subject}-${topic.topic}`) && (
+                        <div className="flex items-center gap-2 text-green-600 dark:text-green-400 animate-bounce">
+                          <CheckCircle className="h-5 w-5" />
+                          <span className="text-sm font-bold">Tebrikler!</span>
+                        </div>
+                      )}
+                    </div>
                     <div className="flex items-center justify-between text-sm text-muted-foreground">
                       <span className={`px-3 py-1.5 rounded-full font-medium shadow-sm ${topic.source === 'exam' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300' : 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300'}`}>
                         {topic.source === 'exam' ? '🎯 Deneme' : '📝 Soru'}
@@ -482,7 +531,7 @@ export function AdvancedCharts() {
                           </span>
                         </div>
                         <div className="text-sm text-orange-600 dark:text-orange-400 bg-gradient-to-r from-orange-100 to-red-100 dark:from-orange-900/40 dark:to-red-900/40 px-3 py-1.5 rounded-full font-semibold shadow-md">
-                          {item.frequency} kez
+                          {item.frequency} Kez
                         </div>
                       </div>
                       
@@ -496,7 +545,7 @@ export function AdvancedCharts() {
                                 item.difficulty === 'orta' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300' :
                                 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300'
                               }`}>
-                                📊 {item.difficulty}
+                                📊 {item.difficulty.charAt(0).toUpperCase() + item.difficulty.slice(1)}
                               </span>
                             )}
                             {item.category && (
@@ -506,8 +555,10 @@ export function AdvancedCharts() {
                                     item.category === 'analiz' ? 'Analiz Sorunu' : 'Dikkatsizlik'}
                               </span>
                             )}
-                            <span className="text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-700 dark:bg-gray-900/40 dark:text-gray-300 font-medium">
-                              📈 {item.totalWrong} yanlış
+                            <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                              item.sources && item.sources.includes('exam') ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300' : 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300'
+                            }`}>
+                              {item.sources && item.sources.includes('exam') ? '🎯 Deneme' : '📝 Soru'} Hatası
                             </span>
                           </div>
                         </div>
@@ -581,7 +632,7 @@ export function AdvancedCharts() {
         </CardHeader>
         <CardContent className="pt-6">
           {analysisMode === 'net' ? (
-            // Net Analysis Chart
+            // Net Analysis Chart with TYT/AYT targets display
             netAnalysisData.length === 0 ? (
               <div className="text-center py-12 text-muted-foreground">
                 <div className="w-20 h-20 rounded-full bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30 flex items-center justify-center mx-auto mb-6 shadow-lg">
@@ -589,9 +640,37 @@ export function AdvancedCharts() {
                 </div>
                 <h4 className="text-lg font-semibold text-blue-700 dark:text-blue-300 mb-2">Henüz deneme verisi yok</h4>
                 <p className="text-sm opacity-75 mb-4">Deneme sonucu ekleyerek net analizinizi görüntüleyin</p>
+                {/* Show targets even when no data */}
+                <div className="flex justify-center gap-8 mt-6">
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">TYT Hedef: 90</div>
+                    <div className="text-sm text-blue-500 dark:text-blue-400">TYT DENEME: 0 net</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-green-600 dark:text-green-400">AYT Hedef: 50</div>
+                    <div className="text-sm text-green-500 dark:text-green-400">AYT DENEME: 0 net</div>
+                  </div>
+                </div>
               </div>
             ) : (
-              <div className="h-96 bg-gradient-to-br from-indigo-50/30 to-purple-50/30 dark:from-indigo-950/20 dark:to-purple-950/20 rounded-xl p-4">
+              <div className="space-y-6">
+                {/* Targets and Current Nets Display */}
+                <div className="grid grid-cols-2 gap-4 mb-6">
+                  <div className="bg-blue-50/80 dark:bg-blue-950/30 rounded-xl p-4 text-center border border-blue-200/50 dark:border-blue-800/40">
+                    <div className="text-lg font-bold text-blue-700 dark:text-blue-300 mb-1">TYT Hedef: 90</div>
+                    <div className="text-sm text-blue-600 dark:text-blue-400">
+                      TYT DENEME: {netAnalysisData.length > 0 ? netAnalysisData[netAnalysisData.length - 1].tytNet : 0} net
+                    </div>
+                  </div>
+                  <div className="bg-green-50/80 dark:bg-green-950/30 rounded-xl p-4 text-center border border-green-200/50 dark:border-green-800/40">
+                    <div className="text-lg font-bold text-green-700 dark:text-green-300 mb-1">AYT Hedef: 50</div>
+                    <div className="text-sm text-green-600 dark:text-green-400">
+                      AYT DENEME: {netAnalysisData.length > 0 ? netAnalysisData[netAnalysisData.length - 1].aytNet : 0} net
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="h-96 bg-gradient-to-br from-indigo-50/30 to-purple-50/30 dark:from-indigo-950/20 dark:to-purple-950/20 rounded-xl p-4">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={netAnalysisData} margin={{ top: 40, right: 60, bottom: 50, left: 40 }}>
                     <defs>
@@ -674,27 +753,28 @@ export function AdvancedCharts() {
                     
                     {/* Actual nets */}
                     <Line 
-                      type="monotone" 
+                      type="linear" 
                       dataKey="tytNet" 
                       stroke="#3b82f6" 
                       strokeWidth={5}
                       dot={{ fill: '#3b82f6', strokeWidth: 4, r: 8, stroke: '#ffffff', shadow: true }} 
                       activeDot={{ r: 12, stroke: '#3b82f6', strokeWidth: 4, fill: '#ffffff', shadow: '0 0 15px rgba(59, 130, 246, 0.6)' }}
-                      connectNulls={false}
+                      connectNulls={true}
                       name="🔵 TYT Net"
                     />
                     <Line 
-                      type="monotone" 
+                      type="linear" 
                       dataKey="aytNet" 
                       stroke="#059669" 
                       strokeWidth={5}
                       dot={{ fill: '#059669', strokeWidth: 4, r: 8, stroke: '#ffffff', shadow: true }} 
                       activeDot={{ r: 12, stroke: '#059669', strokeWidth: 4, fill: '#ffffff', shadow: '0 0 15px rgba(5, 150, 105, 0.6)' }}
-                      connectNulls={false}
+                      connectNulls={true}
                       name="🟢 AYT Net"
                     />
                   </LineChart>
                 </ResponsiveContainer>
+                </div>
               </div>
             )
           ) : (

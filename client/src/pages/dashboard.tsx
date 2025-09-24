@@ -1250,16 +1250,27 @@ export default function Dashboard() {
                       if (e.key === 'Enter' && wrongTopicInput.trim()) {
                         // Title case conversion: her kelimenin baş harfini büyük yap
                         const titleCaseTopic = toTitleCase(wrongTopicInput);
+                        // Add TYT/AYT prefix to course name
+                        const prefixedTopic = `${newQuestion.exam_type} ${newQuestion.subject} - ${titleCaseTopic}`;
                         
-                        setNewQuestion({
-                          ...newQuestion, 
-                          wrong_topics: [...newQuestion.wrong_topics, {
-                            topic: titleCaseTopic,
-                            difficulty: selectedTopicDifficulty,
-                            category: selectedTopicCategory
-                          }]
-                        });
-                        setWrongTopicInput("");
+                        // Check for duplicates
+                        const isDuplicate = newQuestion.wrong_topics.some(existingTopic => 
+                          existingTopic.topic.toLowerCase() === prefixedTopic.toLowerCase()
+                        );
+                        
+                        if (!isDuplicate) {
+                          setNewQuestion({
+                            ...newQuestion, 
+                            wrong_topics: [...newQuestion.wrong_topics, {
+                              topic: prefixedTopic,
+                              difficulty: selectedTopicDifficulty,
+                              category: selectedTopicCategory
+                            }]
+                          });
+                          setWrongTopicInput("");
+                        } else {
+                          toast({ title: "⚠️ Uyarı", description: "Bu konu zaten eklenmiş!", variant: "destructive" });
+                        }
                       }
                     }}
                     data-testid="input-wrong-topics"
@@ -1272,15 +1283,28 @@ export default function Dashboard() {
                       className="absolute right-2 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-100 dark:hover:bg-red-900/30"
                       onClick={() => {
                         if (wrongTopicInput.trim()) {
-                          setNewQuestion({
-                            ...newQuestion, 
-                            wrong_topics: [...newQuestion.wrong_topics, {
-                              topic: wrongTopicInput.trim(),
-                              difficulty: selectedTopicDifficulty,
-                              category: selectedTopicCategory
-                            }]
-                          });
-                          setWrongTopicInput("");
+                          // Title case conversion and add TYT/AYT prefix
+                          const titleCaseTopic = toTitleCase(wrongTopicInput);
+                          const prefixedTopic = `${newQuestion.exam_type} ${newQuestion.subject} - ${titleCaseTopic}`;
+                          
+                          // Check for duplicates
+                          const isDuplicate = newQuestion.wrong_topics.some(existingTopic => 
+                            existingTopic.topic.toLowerCase() === prefixedTopic.toLowerCase()
+                          );
+                          
+                          if (!isDuplicate) {
+                            setNewQuestion({
+                              ...newQuestion, 
+                              wrong_topics: [...newQuestion.wrong_topics, {
+                                topic: prefixedTopic,
+                                difficulty: selectedTopicDifficulty,
+                                category: selectedTopicCategory
+                              }]
+                            });
+                            setWrongTopicInput("");
+                          } else {
+                            toast({ title: "⚠️ Uyarı", description: "Bu konu zaten eklenmiş!", variant: "destructive" });
+                          }
                         }
                       }}
                       data-testid="button-add-topic"
@@ -1598,12 +1622,19 @@ export default function Dashboard() {
                           value={currentWrongTopics.turkce || ""}
                           onChange={(e) => {
                             setCurrentWrongTopics({...currentWrongTopics, turkce: e.target.value});
-                            const topics = e.target.value.split(',').map(t => toTitleCase(t.trim())).filter(t => t.length > 0);
+                            const topics = e.target.value.split(',').map(t => {
+                              const cleanTopic = toTitleCase(t.trim());
+                              return cleanTopic ? `${newExamResult.exam_type} Türkçe - ${cleanTopic}` : '';
+                            }).filter(t => t.length > 0);
+                            
+                            // Remove duplicates
+                            const uniqueTopics = [...new Set(topics)];
+                            
                             setNewExamResult({
                               ...newExamResult,
                               subjects: {
                                 ...newExamResult.subjects,
-                                turkce: { ...newExamResult.subjects.turkce, wrong_topics: topics }
+                                turkce: { ...newExamResult.subjects.turkce, wrong_topics: uniqueTopics }
                               }
                             });
                           }}
