@@ -48,7 +48,32 @@ export function DashboardSummaryCards() {
     const uniqueDates = Array.from(new Set(questionLogs.map(log => log.study_date)));
     const dailyAverage = uniqueDates.length > 0 ? (totalQuestions / uniqueDates.length).toFixed(1) : '0';
     
-    return { totalQuestions, dailyAverage, totalCorrect, activeDays: uniqueDates.length };
+    // Find most active day
+    const dayActivity: { [key: string]: number } = {};
+    questionLogs.forEach(log => {
+      const date = log.study_date;
+      const count = (Number(log.correct_count) || 0) + (Number(log.wrong_count) || 0) + (Number(log.blank_count) || 0);
+      dayActivity[date] = (dayActivity[date] || 0) + count;
+    });
+    
+    let mostActiveDay: string | null = null;
+    let maxActivity = 0;
+    Object.entries(dayActivity).forEach(([date, count]) => {
+      if (count > maxActivity) {
+        maxActivity = count;
+        mostActiveDay = date;
+      }
+    });
+    
+    return { 
+      totalQuestions, 
+      dailyAverage, 
+      totalCorrect, 
+      totalWrong,
+      activeDays: uniqueDates.length,
+      mostActiveDay,
+      maxActivity
+    };
   };
 
   // Calculate strongest and weakest subjects based on success rates
@@ -218,7 +243,21 @@ export function DashboardSummaryCards() {
               </div>
               <div>
                 <h3 className="text-xl font-bold text-foreground">Soru İstatistikleri</h3>
-                <p className="text-sm text-muted-foreground">{questionStats.activeDays} aktif gün</p>
+                <p className="text-sm text-muted-foreground">
+                  {questionStats.mostActiveDay ? (
+                    <span className="flex items-center gap-1">
+                      En Aktif Olunan Gün → 
+                      <span className="font-semibold text-purple-600 dark:text-purple-400">
+                        {new Date(questionStats.mostActiveDay).toLocaleDateString('tr-TR', { 
+                          day: 'numeric', 
+                          month: 'short'
+                        })} ({questionStats.maxActivity} soru)
+                      </span>
+                    </span>
+                  ) : (
+                    'Henüz aktif gün bulunmuyor'
+                  )}
+                </p>
               </div>
             </div>
             
@@ -255,6 +294,9 @@ export function DashboardSummaryCards() {
                 <div className="flex justify-between items-center">
                   <div className="text-sm font-medium text-green-700 dark:text-green-300">
                     Doğru: <span className="font-bold">{questionStats.totalCorrect}</span>
+                  </div>
+                  <div className="text-sm font-medium text-red-700 dark:text-red-300">
+                    Yanlış: <span className="font-bold">{questionStats.totalWrong}</span>
                   </div>
                   <div className="text-sm font-medium text-green-700 dark:text-green-300">
                     Başarı: <span className="font-bold">{(questionStats.totalQuestions - (questionLogs.reduce((total, log) => total + (Number(log.blank_count) || 0), 0))) > 0 ? ((questionStats.totalCorrect / (questionStats.totalQuestions - (questionLogs.reduce((total, log) => total + (Number(log.blank_count) || 0), 0)))) * 100).toFixed(1) : 0}%</span>
