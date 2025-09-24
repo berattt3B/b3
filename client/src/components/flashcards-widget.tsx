@@ -11,7 +11,9 @@ interface Flashcard {
   id: string;
   question: string;
   answer: string;
+  examType: 'TYT' | 'AYT';
   subject: string;
+  topic?: string | null;
   difficulty: 'easy' | 'medium' | 'hard';
   lastReviewed?: Date | null;
   nextReview?: Date | null;
@@ -21,13 +23,17 @@ interface Flashcard {
 
 export function FlashcardsWidget() {
   const [currentCard, setCurrentCard] = useState<Flashcard | null>(null);
-  const [showAnswer, setShowAnswer] = useState(false);
+  const [userAnswer, setUserAnswer] = useState('');
+  const [isAnswered, setIsAnswered] = useState(false);
+  const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
   const [isStudyMode, setIsStudyMode] = useState(false);
   const [isCreatingCard, setIsCreatingCard] = useState(false);
   const [newCard, setNewCard] = useState({
     question: '',
     answer: '',
+    examType: 'TYT' as 'TYT' | 'AYT',
     subject: '',
+    topic: '',
     difficulty: 'medium' as 'easy' | 'medium' | 'hard'
   });
   const queryClient = useQueryClient();
@@ -37,18 +43,20 @@ export function FlashcardsWidget() {
   });
 
   const reviewCardMutation = useMutation({
-    mutationFn: async ({ cardId, difficulty }: { cardId: string; difficulty: 'easy' | 'medium' | 'hard' }) => {
+    mutationFn: async ({ cardId, difficulty, isCorrect, userAnswer }: { cardId: string; difficulty: 'easy' | 'medium' | 'hard'; isCorrect: boolean; userAnswer: string }) => {
       const response = await fetch(`/api/flashcards/${cardId}/review`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ difficulty }),
+        body: JSON.stringify({ difficulty, isCorrect, userAnswer }),
       });
       if (!response.ok) throw new Error('Failed to review card');
       return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/flashcards/due"] });
-      setShowAnswer(false);
+      setUserAnswer('');
+      setIsAnswered(false);
+      setIsCorrect(null);
       setCurrentCard(null);
     }
   });
@@ -65,15 +73,37 @@ export function FlashcardsWidget() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/flashcards/due"] });
-      setNewCard({ question: '', answer: '', subject: '', difficulty: 'medium' });
+      setNewCard({ question: '', answer: '', examType: 'TYT', subject: '', topic: '', difficulty: 'medium' });
       setIsCreatingCard(false);
     }
   });
 
   const handleCreateCard = () => {
-    if (newCard.question.trim() && newCard.answer.trim() && newCard.subject.trim()) {
+    if (newCard.question.trim() && newCard.answer.trim() && newCard.subject.trim() && newCard.topic.trim()) {
       createCardMutation.mutate(newCard);
     }
+  };
+
+  const handleAnswerSubmit = () => {
+    if (!currentCard || !userAnswer.trim()) return;
+    
+    const isAnswerCorrect = userAnswer.toLowerCase().trim() === currentCard.answer.toLowerCase().trim();
+    setIsCorrect(isAnswerCorrect);
+    setIsAnswered(true);
+  };
+
+  const handleNextCard = () => {
+    if (!currentCard || !isAnswered) return;
+    
+    // Yanlış cevaplanan kartlar için daha sık tekrar
+    const difficulty = isCorrect ? 'easy' : 'hard';
+    
+    reviewCardMutation.mutate({ 
+      cardId: currentCard.id, 
+      difficulty, 
+      isCorrect: isCorrect || false, 
+      userAnswer 
+    });
   };
 
   const drawRandomCard = () => {
@@ -87,13 +117,16 @@ export function FlashcardsWidget() {
       setCurrentCard(availableCards[randomIndex]);
     }
     
-    setShowAnswer(false);
+    setUserAnswer('');
+    setIsAnswered(false);
+    setIsCorrect(null);
     setIsStudyMode(true);
   };
 
-  const handleReview = (difficulty: 'easy' | 'medium' | 'hard') => {
-    if (!currentCard) return;
-    reviewCardMutation.mutate({ cardId: currentCard.id, difficulty });
+  const getExamTypeColor = (examType: string) => {
+    return examType === 'TYT' 
+      ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300'
+      : 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300';
   };
 
   const getDifficultyColor = (difficulty: string) => {
@@ -160,10 +193,22 @@ export function FlashcardsWidget() {
                 </DialogHeader>
                 <div className="space-y-4">
                   <div>
-                    <label className="text-sm font-medium text-foreground">Konu</label>
+                    <label className="text-sm font-medium text-foreground">Sınav Türü</label>
+                    <Select value={newCard.examType} onValueChange={(value: 'TYT' | 'AYT') => setNewCard({...newCard, examType: value})}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="TYT">TYT</SelectItem>
+                        <SelectItem value="AYT">AYT</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-foreground">Ders</label>
                     <Select value={newCard.subject} onValueChange={(value) => setNewCard({...newCard, subject: value})}>
                       <SelectTrigger>
-                        <SelectValue placeholder="Konu seçin" />
+                        <SelectValue placeholder="Ders seçin" />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="matematik">Matematik</SelectItem>
@@ -177,6 +222,14 @@ export function FlashcardsWidget() {
                         <SelectItem value="genel">Genel</SelectItem>
                       </SelectContent>
                     </Select>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-foreground">Konu</label>
+                    <Input
+                      value={newCard.topic}
+                      onChange={(e) => setNewCard({...newCard, topic: e.target.value})}
+                      placeholder="Konuyu yazın... (ör: Türev, Hareket)"
+                    />
                   </div>
                   <div>
                     <label className="text-sm font-medium text-foreground">Soru</label>
@@ -215,9 +268,9 @@ export function FlashcardsWidget() {
                     </Button>
                     <Button 
                       onClick={handleCreateCard} 
-                      disabled={!newCard.question.trim() || !newCard.answer.trim() || !newCard.subject || createCardMutation.isPending}
+                      disabled={!newCard.question.trim() || !newCard.answer.trim() || !newCard.subject || !newCard.topic.trim() || createCardMutation.isPending}
                     >
-                      {createCardMutation.isPending ? 'Oluşturuluyor...' : 'Oluştur'}
+                      {createCardMutation.isPending ? 'Oluşturuyor...' : 'Oluştur'}
                     </Button>
                   </div>
                 </div>
@@ -294,8 +347,10 @@ export function FlashcardsWidget() {
         {/* Card Info */}
         <div className="flex items-center justify-between text-sm">
           <div className="flex items-center gap-2">
+            <span className="bg-primary/10 text-primary px-2 py-1 rounded text-xs font-medium">{currentCard.examType}</span>
             <span className="text-lg">{getSubjectEmoji(currentCard.subject)}</span>
             <span className="font-medium capitalize">{currentCard.subject}</span>
+            {currentCard.topic && <span className="text-muted-foreground">• {currentCard.topic}</span>}
           </div>
           <div className={`px-2 py-1 rounded-lg border text-xs font-medium ${getDifficultyColor(currentCard.difficulty)}`}>
             {currentCard.difficulty === 'easy' ? 'Kolay' : currentCard.difficulty === 'medium' ? 'Orta' : 'Zor'}
@@ -310,60 +365,66 @@ export function FlashcardsWidget() {
           </p>
         </div>
 
-        {/* Show Answer Button or Answer */}
-        {!showAnswer ? (
-          <button
-            onClick={() => setShowAnswer(true)}
-            className="w-full bg-muted text-foreground py-3 rounded-lg font-medium hover:bg-muted/80 transition-colors duration-200 border border-border"
-            data-testid="show-answer-button"
-          >
-            Cevabı Göster
-          </button>
+        {/* Answer Input Section */}
+        {!isAnswered ? (
+          <div className="space-y-3">
+            <div>
+              <label className="text-sm font-medium text-foreground mb-2 block">Cevabınızı Yazın:</label>
+              <Input
+                value={userAnswer}
+                onChange={(e) => setUserAnswer(e.target.value)}
+                placeholder="Cevabı buraya yazın..."
+                onKeyPress={(e) => e.key === 'Enter' && handleAnswerSubmit()}
+                className="text-base"
+                data-testid="answer-input"
+              />
+            </div>
+            <Button
+              onClick={handleAnswerSubmit}
+              disabled={!userAnswer.trim()}
+              className="w-full"
+              data-testid="check-answer-button"
+            >
+              Kontrol Et
+            </Button>
+          </div>
         ) : (
           <div className="space-y-4">
-            {/* Answer Card */}
-            <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 border border-green-200 dark:border-green-800 rounded-xl p-6 min-h-[120px]">
-              <div className="text-xs text-green-700 dark:text-green-400 font-medium mb-2">CEVAP</div>
-              <p className="text-foreground font-medium text-base leading-relaxed" data-testid="flashcard-answer">
-                {currentCard.answer}
-              </p>
-            </div>
-
-            {/* Review Buttons */}
-            <div className="space-y-2">
-              <div className="grid grid-cols-3 gap-2">
-                <button
-                  onClick={() => handleReview('hard')}
-                  className="flex flex-col items-center gap-1 p-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg text-red-700 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors duration-200"
-                  disabled={reviewCardMutation.isPending}
-                  data-testid="review-hard-button"
-                >
-                  <XCircle className="h-4 w-4" />
-                  <span className="text-xs font-medium">Zor</span>
-                  <span className="text-xs opacity-75">1 gün</span>
-                </button>
-                <button
-                  onClick={() => handleReview('medium')}
-                  className="flex flex-col items-center gap-1 p-3 bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-800 rounded-lg text-yellow-700 dark:text-yellow-300 hover:bg-yellow-100 dark:hover:bg-yellow-900/50 transition-colors duration-200"
-                  disabled={reviewCardMutation.isPending}
-                  data-testid="review-medium-button"
-                >
-                  <AlertCircle className="h-4 w-4" />
-                  <span className="text-xs font-medium">Orta</span>
-                  <span className="text-xs opacity-75">2-4 gün</span>
-                </button>
-                <button
-                  onClick={() => handleReview('easy')}
-                  className="flex flex-col items-center gap-1 p-3 bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 rounded-lg text-green-700 dark:text-green-300 hover:bg-green-100 dark:hover:bg-green-900/50 transition-colors duration-200"
-                  disabled={reviewCardMutation.isPending}
-                  data-testid="review-easy-button"
-                >
-                  <CheckCircle className="h-4 w-4" />
-                  <span className="text-xs font-medium">Kolay</span>
-                  <span className="text-xs opacity-75">3+ gün</span>
-                </button>
+            {/* User Answer Feedback */}
+            <div className={`p-4 rounded-lg border ${
+              isCorrect 
+                ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800' 
+                : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'
+            }`}>
+              <div className="flex items-center gap-2 mb-2">
+                {isCorrect ? (
+                  <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
+                ) : (
+                  <XCircle className="h-5 w-5 text-red-600 dark:text-red-400" />
+                )}
+                <span className={`font-medium ${
+                  isCorrect 
+                    ? 'text-green-800 dark:text-green-300' 
+                    : 'text-red-800 dark:text-red-300'
+                }`}>
+                  {isCorrect ? 'Doğru!' : 'Yanlış!'}
+                </span>
+              </div>
+              <div className="text-sm">
+                <p className="text-muted-foreground">Sizin cevabınız: <span className="font-medium">{userAnswer}</span></p>
+                <p className="text-muted-foreground">Doğru cevap: <span className="font-medium text-foreground">{currentCard.answer}</span></p>
               </div>
             </div>
+
+            {/* Next Button */}
+            <Button
+              onClick={handleNextCard}
+              disabled={reviewCardMutation.isPending}
+              className="w-full"
+              data-testid="next-card-button"
+            >
+              {reviewCardMutation.isPending ? 'Yükleniyor...' : 'Sonraki Kart'}
+            </Button>
           </div>
         )}
 

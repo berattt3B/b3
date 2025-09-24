@@ -980,7 +980,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/flashcards/:id/review", async (req, res) => {
     try {
       const { id } = req.params;
-      const { difficulty } = req.body;
+      const { difficulty, isCorrect, userAnswer } = req.body;
       
       if (!['easy', 'medium', 'hard'].includes(difficulty)) {
         return res.status(400).json({ message: "Invalid difficulty level" });
@@ -991,10 +991,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!flashcard) {
         return res.status(404).json({ message: "Flashcard not found" });
       }
+
+      // Eğer cevap yanlışsa hata takibine ekle
+      if (!isCorrect && userAnswer && flashcard) {
+        await storage.addFlashcardError({
+          cardId: id,
+          question: flashcard.question,
+          topic: flashcard.topic || flashcard.subject,
+          difficulty: flashcard.difficulty,
+          userAnswer,
+          correctAnswer: flashcard.answer,
+          timestamp: new Date()
+        });
+      }
       
       res.json(flashcard);
     } catch (error) {
       res.status(500).json({ message: "Failed to review flashcard" });
+    }
+  });
+
+  // Hata sıklığı analizi için route
+  app.get("/api/flashcards/errors", async (req, res) => {
+    try {
+      const errors = await storage.getFlashcardErrors();
+      res.json(errors);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch flashcard errors" });
+    }
+  });
+
+  app.get("/api/flashcards/errors/by-difficulty", async (req, res) => {
+    try {
+      const errorsByDifficulty = await storage.getFlashcardErrorsByDifficulty();
+      res.json(errorsByDifficulty);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch flashcard errors by difficulty" });
+    }
+  });
+
+  // Örnek kartları yükle
+  app.post("/api/flashcards/seed", async (req, res) => {
+    try {
+      await storage.seedSampleFlashcards();
+      res.json({ message: "Sample flashcards seeded successfully" });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to seed sample flashcards" });
     }
   });
 
