@@ -189,18 +189,53 @@ export function AdvancedCharts() {
 
   const lineChartData = netProgressionData;
 
-  // NEW: Prepare priority topics data for bar chart
+  // NEW: Prepare enhanced priority topics data combining question logs and exam results
   const preparePriorityTopicsData = () => {
-    return priorityTopics.slice(0, 8).map(topic => ({
-      topic: topic.topic.length > 15 ? `${topic.topic.substring(0, 15)}...` : topic.topic,
-      fullTopic: topic.topic,
-      wrongMentions: topic.wrongMentions,
-      priority: typeof topic.priority === 'number' ? topic.priority : 0,
-      mentionFrequency: topic.mentionFrequency,
-      improvementNeeded: topic.improvementNeeded || false,
-      lastSeen: topic.lastSeen || new Date().toISOString(),
-      color: topic.color
-    }));
+    // Create enhanced priority topics with combined data sources
+    const enhancedTopics = priorityTopics.slice(0, 8).map(topic => {
+      // Calculate difficulty level based on error frequency and priority
+      const getDifficultyLevel = (wrongMentions: number, priority: number) => {
+        const errorScore = wrongMentions;
+        const priorityScore = typeof priority === 'number' ? priority : 0;
+        
+        // Combined scoring system
+        if (errorScore >= 10 || priorityScore >= 80) {
+          return { level: 'Zor', color: 'red', bgColor: 'from-red-500 to-red-600', icon: '🔥' };
+        } else if (errorScore >= 5 || priorityScore >= 50) {
+          return { level: 'Orta', color: 'orange', bgColor: 'from-orange-500 to-orange-600', icon: '⚠️' };
+        } else {
+          return { level: 'Kolay', color: 'yellow', bgColor: 'from-yellow-500 to-yellow-600', icon: '✨' };
+        }
+      };
+      
+      const difficulty = getDifficultyLevel(topic.wrongMentions, topic.priority);
+      
+      // Find related exam results data
+      const relatedExamErrors = examResults.filter(exam => 
+        exam.subjects && Object.values(exam.subjects).some(subject => 
+          subject.wrong_topics && subject.wrong_topics.some(wrongTopic => 
+            wrongTopic.toLowerCase().includes(topic.topic.toLowerCase()) || 
+            topic.topic.toLowerCase().includes(wrongTopic.toLowerCase())
+          )
+        )
+      );
+      
+      return {
+        topic: topic.topic.length > 15 ? `${topic.topic.substring(0, 15)}...` : topic.topic,
+        fullTopic: topic.topic,
+        wrongMentions: topic.wrongMentions,
+        priority: typeof topic.priority === 'number' ? topic.priority : 0,
+        mentionFrequency: topic.mentionFrequency,
+        improvementNeeded: topic.improvementNeeded || false,
+        lastSeen: topic.lastSeen || new Date().toISOString(),
+        difficulty: difficulty,
+        examCount: relatedExamErrors.length,
+        totalSources: topic.wrongMentions + relatedExamErrors.length,
+        color: topic.color
+      };
+    });
+
+    return enhancedTopics;
   };
 
   // NEW: Prepare combined topic error frequency data (from both question logs and flashcards)
@@ -315,68 +350,85 @@ export function AdvancedCharts() {
               <p className="text-sm opacity-75 mb-3">Soru analizi yaparken yanlış konular ekleyince burada görünecek</p>
             </div>
           ) : (
-            /* HORIZONTAL Grid Layout */
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
-              {priorityTopics.slice(0, 8).map((topic, index) => (
+            /* ENHANCED HORIZONTAL Grid Layout with Combined Data */
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-5">
+              {priorityTopicsData.map((topic, index) => (
                 <div 
                   key={index}
-                  className="group bg-gradient-to-br from-white/90 to-red-50/50 dark:from-slate-800/90 dark:to-red-950/50 rounded-xl border border-red-200/50 dark:border-red-700/30 p-4 hover:shadow-xl transition-all duration-300 hover:scale-[1.02] relative overflow-hidden"
+                  className={`group bg-gradient-to-br from-white/95 to-${topic.difficulty.color}-50/60 dark:from-slate-800/95 dark:to-${topic.difficulty.color}-950/40 rounded-2xl border-2 border-${topic.difficulty.color}-200/60 dark:border-${topic.difficulty.color}-700/50 p-5 hover:shadow-2xl transition-all duration-500 hover:scale-[1.03] relative overflow-hidden backdrop-blur-sm`}
                   data-testid={`priority-topic-item-${index}`}
                 >
+                  {/* Animated Background Elements */}
+                  <div className={`absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-${topic.difficulty.color}-400/20 to-${topic.difficulty.color}-600/20 rounded-full blur-2xl animate-pulse`}></div>
+                  
                   {/* Priority Ranking Badge */}
-                  <div className="absolute top-2 right-2">
-                    <div className={`flex items-center justify-center w-6 h-6 rounded-full text-white text-xs font-bold shadow-lg ${
-                      topic.improvementNeeded 
-                        ? 'bg-gradient-to-br from-red-500 to-red-600' 
-                        : topic.priority > 70 
-                          ? 'bg-gradient-to-br from-orange-500 to-orange-600'
-                          : 'bg-gradient-to-br from-yellow-500 to-yellow-600'
-                    }`}>
+                  <div className="absolute top-3 right-3">
+                    <div className={`flex items-center justify-center w-7 h-7 rounded-full text-white text-xs font-bold shadow-lg bg-gradient-to-br ${topic.difficulty.bgColor}`}>
                       #{index + 1}
                     </div>
                   </div>
                   
-                  <div className="space-y-2">
+                  <div className="space-y-3 relative">
                     {/* Topic Name */}
-                    <h4 className="font-bold text-sm text-red-800 dark:text-red-200 group-hover:text-red-600 transition-colors pr-8">
-                      {topic.topic.length > 20 ? `${topic.topic.substring(0, 20)}...` : topic.topic}
+                    <h4 className={`font-bold text-base text-${topic.difficulty.color}-800 dark:text-${topic.difficulty.color}-200 group-hover:text-${topic.difficulty.color}-600 transition-colors pr-10 leading-tight`}>
+                      {topic.fullTopic.length > 25 ? `${topic.fullTopic.substring(0, 25)}...` : topic.fullTopic}
                     </h4>
                     
-                    {/* Priority Percentage */}
+                    {/* Difficulty Level Display */}
                     <div className="text-center">
-                      <div className="text-xl font-bold text-red-600 dark:text-red-400">
-                        %{typeof topic.priority === 'number' ? topic.priority.toFixed(0) : topic.priority}
+                      <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r ${topic.difficulty.bgColor} text-white font-bold text-lg shadow-lg`}>
+                        <span className="text-xl">{topic.difficulty.icon}</span>
+                        <span>{topic.difficulty.level}</span>
                       </div>
-                      <div className="text-xs text-red-600/70 dark:text-red-400/70">öncelik</div>
+                      <div className={`text-xs text-${topic.difficulty.color}-600/80 dark:text-${topic.difficulty.color}-400/80 mt-1 font-medium`}>
+                        zorluk seviyesi
+                      </div>
                     </div>
                     
-                    {/* Status Badge */}
-                    <div className={`text-center px-2 py-1 rounded-full text-xs font-medium ${
-                      topic.improvementNeeded
-                        ? 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300'
-                        : 'bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-300'
-                    }`}>
-                      {topic.improvementNeeded ? '🔥 Acil' : '⚠️ Dikkat'}
+                    {/* Combined Data Sources */}
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div className={`bg-${topic.difficulty.color}-100/60 dark:bg-${topic.difficulty.color}-900/30 rounded-lg p-2 text-center`}>
+                        <div className={`font-bold text-${topic.difficulty.color}-700 dark:text-${topic.difficulty.color}-300 text-sm`}>
+                          {topic.wrongMentions}
+                        </div>
+                        <div className={`text-${topic.difficulty.color}-600/80 dark:text-${topic.difficulty.color}-400/80`}>
+                          Soru Hatası
+                        </div>
+                      </div>
+                      <div className={`bg-${topic.difficulty.color}-100/60 dark:bg-${topic.difficulty.color}-900/30 rounded-lg p-2 text-center`}>
+                        <div className={`font-bold text-${topic.difficulty.color}-700 dark:text-${topic.difficulty.color}-300 text-sm`}>
+                          {topic.examCount}
+                        </div>
+                        <div className={`text-${topic.difficulty.color}-600/80 dark:text-${topic.difficulty.color}-400/80`}>
+                          Deneme Hatası
+                        </div>
+                      </div>
                     </div>
                     
-                    {/* Wrong Mentions Count */}
-                    <div className="text-center text-xs text-muted-foreground">
-                      {topic.wrongMentions} yanlış
+                    {/* Total Error Count */}
+                    <div className="text-center">
+                      <div className={`text-lg font-bold text-${topic.difficulty.color}-600 dark:text-${topic.difficulty.color}-400`}>
+                        {topic.totalSources} toplam hata
+                      </div>
+                      <div className={`text-xs text-${topic.difficulty.color}-600/70 dark:text-${topic.difficulty.color}-400/70`}>
+                        📊 Soru + Deneme verilerinden
+                      </div>
                     </div>
                     
-                    {/* Progress Bar */}
-                    <div className="w-full bg-red-100 dark:bg-red-900/30 rounded-full h-1.5">
+                    {/* Enhanced Progress Bar */}
+                    <div className={`w-full bg-${topic.difficulty.color}-100 dark:bg-${topic.difficulty.color}-900/30 rounded-full h-2.5 shadow-inner`}>
                       <div 
-                        className={`h-1.5 rounded-full transition-all duration-700 ${
-                          topic.improvementNeeded 
-                            ? 'bg-gradient-to-r from-red-500 to-red-600' 
-                            : topic.priority > 70 
-                              ? 'bg-gradient-to-r from-orange-500 to-orange-600'
-                              : 'bg-gradient-to-r from-yellow-500 to-yellow-600'
-                        }`}
-                        style={{ width: `${topic.priority}%` }}
+                        className={`h-2.5 rounded-full transition-all duration-1000 bg-gradient-to-r ${topic.difficulty.bgColor} shadow-lg`}
+                        style={{ width: `${Math.min(topic.totalSources * 10, 100)}%` }}
                       />
                     </div>
+                    
+                    {/* Last Seen Info */}
+                    {topic.lastSeen && (
+                      <div className={`text-xs text-${topic.difficulty.color}-600/60 dark:text-${topic.difficulty.color}-400/60 text-center`}>
+                        Son görülme: {new Date(topic.lastSeen).toLocaleDateString('tr-TR')}
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}
@@ -400,7 +452,7 @@ export function AdvancedCharts() {
                   📊 Hata Sıklığı Analizi
                 </h3>
                 <p className="text-sm text-blue-600/70 dark:text-blue-400/70 font-medium">
-                  Yanlış konu analizlerinden en sık yapılan hatalar
+                  📊 Soru Analizleri + Deneme Sonuçları canlı verileri
                 </p>
               </div>
             </div>
