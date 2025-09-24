@@ -246,7 +246,7 @@ export default function Dashboard() {
     }
   };
 
-  // Generate yearly heatmap data from January to September
+  // Generate yearly heatmap data from January to current date
   const generateYearlyHeatmapData = () => {
     const data = [];
     const today = new Date();
@@ -254,12 +254,15 @@ export default function Dashboard() {
     
     // Start from January 1st of current year
     const startDate = new Date(currentYear, 0, 1); // January 1st
-    // End at today (current date) - ensure we include today
-    const actualEndDate = new Date(currentYear, today.getMonth(), today.getDate(), 23, 59, 59, 999); // End of today
     
-    // Generate data from January 1st to end date (inclusive)
+    // Generate data from January 1st to today (inclusive)
     const currentDate = new Date(startDate);
-    while (currentDate.getTime() <= actualEndDate.getTime()) {
+    const todayDateStr = today.getFullYear() + '-' + 
+      String(today.getMonth() + 1).padStart(2, '0') + '-' + 
+      String(today.getDate()).padStart(2, '0');
+    
+    // Continue until we've included today
+    while (currentDate.toISOString().split('T')[0] <= todayDateStr) {
       const dateStr = currentDate.toISOString().split('T')[0];
       
       // Calculate activity intensity for this day
@@ -272,12 +275,8 @@ export default function Dashboard() {
       
       const studyIntensity = Math.min((dayQuestions.length * 2 + dayTasks.length) / 10, 1);
       
-      // Check if this is today - Fix timezone issues with proper date comparison
-      const today_fixed = new Date();
-      today_fixed.setHours(23, 59, 59, 999); // Set to end of today for proper comparison
-      const currentDate_fixed = new Date(currentDate);
-      currentDate_fixed.setHours(23, 59, 59, 999);
-      const isToday = currentDate_fixed.toDateString() === new Date().toDateString();
+      // Check if this is today - Fixed comparison
+      const isToday = dateStr === todayDateStr;
       
       data.push({
         date: dateStr,
@@ -1475,32 +1474,50 @@ export default function Dashboard() {
                     </div>
                   </div>
                   {parseInt(newExamResult.subjects.turkce.wrong) > 0 && (
-                    <div className="bg-gradient-to-r from-red-50/70 to-orange-50/50 dark:from-red-900/20 dark:to-orange-900/15 rounded-xl p-4 border border-red-200/40 dark:border-red-700/30 mt-3">
-                      <div className="flex items-center gap-2 mb-3">
-                        <AlertTriangle className="h-4 w-4 text-red-500" />
-                        <label className="text-sm font-semibold text-red-700 dark:text-red-300">🔍 Türkçe Eksik Konular</label>
-                      </div>
-                      <Input
-                        value={currentWrongTopics.turkce || ""}
-                        onChange={(e) => {
-                          setCurrentWrongTopics({...currentWrongTopics, turkce: e.target.value});
-                          const topics = e.target.value.split(',').map(t => t.trim()).filter(t => t.length > 0);
-                          setNewExamResult({
-                            ...newExamResult,
-                            subjects: {
-                              ...newExamResult.subjects,
-                              turkce: { ...newExamResult.subjects.turkce, wrong_topics: topics }
-                            }
-                          });
-                        }}
-                        placeholder="konu1, konu2, konu3 şeklinde virgülle ayırarak yazın..."
-                        className="bg-white/80 dark:bg-gray-800/80 border-red-200 dark:border-red-700/50 focus:border-red-400 dark:focus:border-red-500 rounded-xl shadow-sm"
-                      />
-                      {currentWrongTopics.turkce && (
-                        <div className="mt-2 text-xs text-red-600/70 dark:text-red-400/70">
-                          💡 Bu konular öncelik listesine eklenecek
+                    <div className="bg-gradient-to-br from-red-50/80 via-white/60 to-orange-50/60 dark:from-red-950/30 dark:via-gray-800/60 dark:to-orange-950/30 rounded-2xl p-5 border-2 border-red-200/50 dark:border-red-700/40 shadow-lg backdrop-blur-sm mt-4">
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="p-2 bg-gradient-to-br from-red-500 to-red-600 rounded-xl shadow-lg">
+                          <Search className="h-4 w-4 text-white" />
                         </div>
-                      )}
+                        <div>
+                          <label className="text-sm font-bold text-red-800 dark:text-red-200 flex items-center gap-2">
+                            🔍 Türkçe Yanlış Konu Analizi
+                            <div className="text-xs bg-red-100 dark:bg-red-900/40 px-2 py-1 rounded-full text-red-700 dark:text-red-300">
+                              {parseInt(newExamResult.subjects.turkce.wrong)} yanlış
+                            </div>
+                          </label>
+                          <p className="text-xs text-red-600/80 dark:text-red-400/80 mt-1">
+                            Eksik konuları belirterek öncelik listesine ekleyin
+                          </p>
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-3">
+                        <Input
+                          value={currentWrongTopics.turkce || ""}
+                          onChange={(e) => {
+                            setCurrentWrongTopics({...currentWrongTopics, turkce: e.target.value});
+                            const topics = e.target.value.split(',').map(t => t.trim()).filter(t => t.length > 0);
+                            setNewExamResult({
+                              ...newExamResult,
+                              subjects: {
+                                ...newExamResult.subjects,
+                                turkce: { ...newExamResult.subjects.turkce, wrong_topics: topics }
+                              }
+                            });
+                          }}
+                          placeholder="Örnek: cümle çözümleme, sözcük türleri, yazım kuralları..."
+                          className="bg-white/90 dark:bg-gray-800/90 border-red-300/60 dark:border-red-600/50 focus:border-red-500 dark:focus:border-red-400 focus:ring-2 focus:ring-red-200 dark:focus:ring-red-800/50 rounded-xl shadow-sm text-sm"
+                        />
+                        {currentWrongTopics.turkce && (
+                          <div className="flex items-center gap-2 p-3 bg-red-100/60 dark:bg-red-900/30 rounded-xl border border-red-200/60 dark:border-red-700/40">
+                            <Lightbulb className="h-4 w-4 text-red-600 dark:text-red-400 flex-shrink-0" />
+                            <div className="text-xs text-red-700/90 dark:text-red-300/90">
+                              <strong>{currentWrongTopics.turkce.split(',').length} konu</strong> öncelik listesine eklenecek ve hata sıklığı analizinde gösterilecek
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>
@@ -1559,32 +1576,50 @@ export default function Dashboard() {
                     </div>
                   </div>
                   {parseInt(newExamResult.subjects.matematik.wrong) > 0 && (
-                    <div className="bg-gradient-to-r from-blue-50/70 to-cyan-50/50 dark:from-blue-900/20 dark:to-cyan-900/15 rounded-xl p-4 border border-blue-200/40 dark:border-blue-700/30 mt-3">
-                      <div className="flex items-center gap-2 mb-3">
-                        <AlertTriangle className="h-4 w-4 text-blue-500" />
-                        <label className="text-sm font-semibold text-blue-700 dark:text-blue-300">🔍 Matematik Eksik Konular</label>
-                      </div>
-                      <Input
-                        value={currentWrongTopics.matematik || ""}
-                        onChange={(e) => {
-                          setCurrentWrongTopics({...currentWrongTopics, matematik: e.target.value});
-                          const topics = e.target.value.split(',').map(t => t.trim()).filter(t => t.length > 0);
-                          setNewExamResult({
-                            ...newExamResult,
-                            subjects: {
-                              ...newExamResult.subjects,
-                              matematik: { ...newExamResult.subjects.matematik, wrong_topics: topics }
-                            }
-                          });
-                        }}
-                        placeholder="konu1, konu2, konu3 şeklinde virgülle ayırarak yazın..."
-                        className="bg-white/80 dark:bg-gray-800/80 border-blue-200 dark:border-blue-700/50 focus:border-blue-400 dark:focus:border-blue-500 rounded-xl shadow-sm"
-                      />
-                      {currentWrongTopics.matematik && (
-                        <div className="mt-2 text-xs text-blue-600/70 dark:text-blue-400/70">
-                          💡 Bu konular öncelik listesine eklenecek
+                    <div className="bg-gradient-to-br from-blue-50/80 via-white/60 to-cyan-50/60 dark:from-blue-950/30 dark:via-gray-800/60 dark:to-cyan-950/30 rounded-2xl p-5 border-2 border-blue-200/50 dark:border-blue-700/40 shadow-lg backdrop-blur-sm mt-4">
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="p-2 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg">
+                          <Search className="h-4 w-4 text-white" />
                         </div>
-                      )}
+                        <div>
+                          <label className="text-sm font-bold text-blue-800 dark:text-blue-200 flex items-center gap-2">
+                            🔍 Matematik Yanlış Konu Analizi
+                            <div className="text-xs bg-blue-100 dark:bg-blue-900/40 px-2 py-1 rounded-full text-blue-700 dark:text-blue-300">
+                              {parseInt(newExamResult.subjects.matematik.wrong)} yanlış
+                            </div>
+                          </label>
+                          <p className="text-xs text-blue-600/80 dark:text-blue-400/80 mt-1">
+                            Eksik konuları belirterek öncelik listesine ekleyin
+                          </p>
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-3">
+                        <Input
+                          value={currentWrongTopics.matematik || ""}
+                          onChange={(e) => {
+                            setCurrentWrongTopics({...currentWrongTopics, matematik: e.target.value});
+                            const topics = e.target.value.split(',').map(t => t.trim()).filter(t => t.length > 0);
+                            setNewExamResult({
+                              ...newExamResult,
+                              subjects: {
+                                ...newExamResult.subjects,
+                                matematik: { ...newExamResult.subjects.matematik, wrong_topics: topics }
+                              }
+                            });
+                          }}
+                          placeholder="Örnek: türev, integral, trigonometri, fonksiyonlar..."
+                          className="bg-white/90 dark:bg-gray-800/90 border-blue-300/60 dark:border-blue-600/50 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800/50 rounded-xl shadow-sm text-sm"
+                        />
+                        {currentWrongTopics.matematik && (
+                          <div className="flex items-center gap-2 p-3 bg-blue-100/60 dark:bg-blue-900/30 rounded-xl border border-blue-200/60 dark:border-blue-700/40">
+                            <Lightbulb className="h-4 w-4 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+                            <div className="text-xs text-blue-700/90 dark:text-blue-300/90">
+                              <strong>{currentWrongTopics.matematik.split(',').length} konu</strong> öncelik listesine eklenecek ve hata sıklığı analizinde gösterilecek
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>
@@ -1643,32 +1678,50 @@ export default function Dashboard() {
                     </div>
                   </div>
                   {parseInt(newExamResult.subjects.sosyal.wrong) > 0 && (
-                    <div className="bg-gradient-to-r from-purple-50/70 to-violet-50/50 dark:from-purple-900/20 dark:to-violet-900/15 rounded-xl p-4 border border-purple-200/40 dark:border-purple-700/30 mt-3">
-                      <div className="flex items-center gap-2 mb-3">
-                        <AlertTriangle className="h-4 w-4 text-purple-500" />
-                        <label className="text-sm font-semibold text-purple-700 dark:text-purple-300">🔍 Sosyal Bilimler Eksik Konular</label>
-                      </div>
-                      <Input
-                        value={currentWrongTopics.sosyal || ""}
-                        onChange={(e) => {
-                          setCurrentWrongTopics({...currentWrongTopics, sosyal: e.target.value});
-                          const topics = e.target.value.split(',').map(t => t.trim()).filter(t => t.length > 0);
-                          setNewExamResult({
-                            ...newExamResult,
-                            subjects: {
-                              ...newExamResult.subjects,
-                              sosyal: { ...newExamResult.subjects.sosyal, wrong_topics: topics }
-                            }
-                          });
-                        }}
-                        placeholder="konu1, konu2, konu3 şeklinde virgülle ayırarak yazın..."
-                        className="bg-white/80 dark:bg-gray-800/80 border-purple-200 dark:border-purple-700/50 focus:border-purple-400 dark:focus:border-purple-500 rounded-xl shadow-sm"
-                      />
-                      {currentWrongTopics.sosyal && (
-                        <div className="mt-2 text-xs text-purple-600/70 dark:text-purple-400/70">
-                          💡 Bu konular öncelik listesine eklenecek
+                    <div className="bg-gradient-to-br from-purple-50/80 via-white/60 to-indigo-50/60 dark:from-purple-950/30 dark:via-gray-800/60 dark:to-indigo-950/30 rounded-2xl p-5 border-2 border-purple-200/50 dark:border-purple-700/40 shadow-lg backdrop-blur-sm mt-4">
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="p-2 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-lg">
+                          <Search className="h-4 w-4 text-white" />
                         </div>
-                      )}
+                        <div>
+                          <label className="text-sm font-bold text-purple-800 dark:text-purple-200 flex items-center gap-2">
+                            🔍 Sosyal Bilimler Yanlış Konu Analizi
+                            <div className="text-xs bg-purple-100 dark:bg-purple-900/40 px-2 py-1 rounded-full text-purple-700 dark:text-purple-300">
+                              {parseInt(newExamResult.subjects.sosyal.wrong)} yanlış
+                            </div>
+                          </label>
+                          <p className="text-xs text-purple-600/80 dark:text-purple-400/80 mt-1">
+                            Eksik konuları belirterek öncelik listesine ekleyin
+                          </p>
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-3">
+                        <Input
+                          value={currentWrongTopics.sosyal || ""}
+                          onChange={(e) => {
+                            setCurrentWrongTopics({...currentWrongTopics, sosyal: e.target.value});
+                            const topics = e.target.value.split(',').map(t => t.trim()).filter(t => t.length > 0);
+                            setNewExamResult({
+                              ...newExamResult,
+                              subjects: {
+                                ...newExamResult.subjects,
+                                sosyal: { ...newExamResult.subjects.sosyal, wrong_topics: topics }
+                              }
+                            });
+                          }}
+                          placeholder="Örnek: tarih dönemleri, coğrafya, vatandaşlık, felsefe..."
+                          className="bg-white/90 dark:bg-gray-800/90 border-purple-300/60 dark:border-purple-600/50 focus:border-purple-500 dark:focus:border-purple-400 focus:ring-2 focus:ring-purple-200 dark:focus:ring-purple-800/50 rounded-xl shadow-sm text-sm"
+                        />
+                        {currentWrongTopics.sosyal && (
+                          <div className="flex items-center gap-2 p-3 bg-purple-100/60 dark:bg-purple-900/30 rounded-xl border border-purple-200/60 dark:border-purple-700/40">
+                            <Lightbulb className="h-4 w-4 text-purple-600 dark:text-purple-400 flex-shrink-0" />
+                            <div className="text-xs text-purple-700/90 dark:text-purple-300/90">
+                              <strong>{currentWrongTopics.sosyal.split(',').length} konu</strong> öncelik listesine eklenecek ve hata sıklığı analizinde gösterilecek
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>
@@ -1727,15 +1780,29 @@ export default function Dashboard() {
                     </div>
                   </div>
                   {parseInt(newExamResult.subjects.fen.wrong) > 0 && (
-                    <div className="bg-gradient-to-r from-orange-50/70 to-amber-50/50 dark:from-orange-900/20 dark:to-amber-900/15 rounded-xl p-4 border border-orange-200/40 dark:border-orange-700/30 mt-3">
-                      <div className="flex items-center gap-2 mb-3">
-                        <AlertTriangle className="h-4 w-4 text-orange-500" />
-                        <label className="text-sm font-semibold text-orange-700 dark:text-orange-300">🔍 Fen Bilimleri Eksik Konular</label>
+                    <div className="bg-gradient-to-br from-orange-50/80 via-white/60 to-amber-50/60 dark:from-orange-950/30 dark:via-gray-800/60 dark:to-amber-950/30 rounded-2xl p-5 border-2 border-orange-200/50 dark:border-orange-700/40 shadow-lg backdrop-blur-sm mt-4">
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="p-2 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl shadow-lg">
+                          <Search className="h-4 w-4 text-white" />
+                        </div>
+                        <div>
+                          <label className="text-sm font-bold text-orange-800 dark:text-orange-200 flex items-center gap-2">
+                            🔍 Fen Bilimleri Yanlış Konu Analizi
+                            <div className="text-xs bg-orange-100 dark:bg-orange-900/40 px-2 py-1 rounded-full text-orange-700 dark:text-orange-300">
+                              {parseInt(newExamResult.subjects.fen.wrong)} yanlış
+                            </div>
+                          </label>
+                          <p className="text-xs text-orange-600/80 dark:text-orange-400/80 mt-1">
+                            Eksik konuları belirterek öncelik listesine ekleyin
+                          </p>
+                        </div>
                       </div>
-                      <Input
-                        value={currentWrongTopics.fen || ""}
-                        onChange={(e) => {
-                          setCurrentWrongTopics({...currentWrongTopics, fen: e.target.value});
+                      
+                      <div className="space-y-3">
+                        <Input
+                          value={currentWrongTopics.fen || ""}
+                          onChange={(e) => {
+                            setCurrentWrongTopics({...currentWrongTopics, fen: e.target.value});
                           const topics = e.target.value.split(',').map(t => t.trim()).filter(t => t.length > 0);
                           setNewExamResult({
                             ...newExamResult,
@@ -1745,14 +1812,18 @@ export default function Dashboard() {
                             }
                           });
                         }}
-                        placeholder="konu1, konu2, konu3 şeklinde virgülle ayırarak yazın..."
-                        className="bg-white/80 dark:bg-gray-800/80 border-orange-200 dark:border-orange-700/50 focus:border-orange-400 dark:focus:border-orange-500 rounded-xl shadow-sm"
-                      />
-                      {currentWrongTopics.fen && (
-                        <div className="mt-2 text-xs text-orange-600/70 dark:text-orange-400/70">
-                          💡 Bu konular öncelik listesine eklenecek
-                        </div>
-                      )}
+                          placeholder="Örnek: fizik konuları, kimya bağları, biyoloji sistemleri..."
+                          className="bg-white/90 dark:bg-gray-800/90 border-orange-300/60 dark:border-orange-600/50 focus:border-orange-500 dark:focus:border-orange-400 focus:ring-2 focus:ring-orange-200 dark:focus:ring-orange-800/50 rounded-xl shadow-sm text-sm"
+                        />
+                        {currentWrongTopics.fen && (
+                          <div className="flex items-center gap-2 p-3 bg-orange-100/60 dark:bg-orange-900/30 rounded-xl border border-orange-200/60 dark:border-orange-700/40">
+                            <Lightbulb className="h-4 w-4 text-orange-600 dark:text-orange-400 flex-shrink-0" />
+                            <div className="text-xs text-orange-700/90 dark:text-orange-300/90">
+                              <strong>{currentWrongTopics.fen.split(',').length} konu</strong> öncelik listesine eklenecek ve hata sıklığı analizinde gösterilecek
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>

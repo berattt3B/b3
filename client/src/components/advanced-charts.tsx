@@ -262,206 +262,169 @@ export function AdvancedCharts() {
 
   return (
     <div className="space-y-8 p-6">
-      {/* NEW Layout: Priority Topics and Error Frequency stacked vertically */}
-      <div className="space-y-8">
-        {/* Enhanced Priority Topics Analysis with Toggle */}
-        <div className="bg-gradient-to-br from-red-50/60 via-card to-orange-50/40 dark:from-red-950/30 dark:via-card dark:to-orange-950/25 rounded-2xl border-2 border-red-200/40 dark:border-red-800/40 p-8 relative overflow-hidden shadow-2xl backdrop-blur-sm">
-          <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-red-500/10 to-orange-500/10 rounded-full blur-3xl animate-pulse"></div>
-          <div className="absolute -bottom-8 -left-8 w-32 h-32 bg-gradient-to-tr from-orange-500/10 to-red-500/10 rounded-full blur-2xl"></div>
-          <div className="relative">
-            <div className="flex items-center justify-between mb-8">
-              <div className="flex items-center space-x-3">
-                <div className="p-3 bg-gradient-to-br from-red-500 via-orange-500 to-red-600 rounded-xl shadow-lg">
-                  <AlertTriangle className="h-6 w-6 text-white drop-shadow-lg" />
-                </div>
-                <div>
-                  <h3 className="text-2xl font-bold bg-gradient-to-r from-red-600 via-orange-600 to-red-700 bg-clip-text text-transparent">
-                    🔥 Öncelik Konuları
-                  </h3>
-                  <p className="text-sm text-red-600/70 dark:text-red-400/70 font-medium">
-                    En çok çalışılması gereken konular
-                  </p>
-                </div>
+      {/* REDESIGNED: Horizontal Priority Topics Section */}
+      <div className="bg-gradient-to-br from-red-50/60 via-card to-orange-50/40 dark:from-red-950/30 dark:via-card dark:to-orange-950/25 rounded-2xl border-2 border-red-200/40 dark:border-red-800/40 p-6 relative overflow-hidden shadow-2xl backdrop-blur-sm">
+        <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-red-500/10 to-orange-500/10 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute -bottom-6 -left-6 w-24 h-24 bg-gradient-to-tr from-orange-500/10 to-red-500/10 rounded-full blur-2xl"></div>
+        <div className="relative">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center space-x-3">
+              <div className="p-2 bg-gradient-to-br from-red-500 via-orange-500 to-red-600 rounded-lg shadow-lg">
+                <AlertTriangle className="h-5 w-5 text-white drop-shadow-lg" />
               </div>
-              
-              <div className="flex items-center gap-4">
-                <div className="text-xs text-muted-foreground bg-red-100/60 dark:bg-red-900/30 px-4 py-2 rounded-full border border-red-200/50 dark:border-red-700/50">
-                  {priorityTopicsData.length} öncelik konusu
-                </div>
-                
-                {/* View Toggle Buttons */}
-                <div className="flex bg-red-100/50 dark:bg-red-900/30 rounded-xl p-1 border border-red-200/50 dark:border-red-700/50">
-                  <Button
-                    variant={priorityViewMode === 'chart' ? 'default' : 'ghost'}
-                    size="sm"
-                    onClick={() => setPriorityViewMode('chart')}
-                    className={`px-3 py-2 rounded-lg transition-all duration-300 ${
-                      priorityViewMode === 'chart' 
-                        ? 'bg-gradient-to-r from-red-500 to-orange-500 text-white shadow-lg' 
-                        : 'text-red-600 dark:text-red-400 hover:bg-red-200/50 dark:hover:bg-red-800/50'
-                    }`}
-                    data-testid="button-priority-chart-view"
-                  >
-                    <BarChartIcon className="h-4 w-4 mr-2" />
-                    Grafik
-                  </Button>
-                  <Button
-                    variant={priorityViewMode === 'text' ? 'default' : 'ghost'}
-                    size="sm"
-                    onClick={() => setPriorityViewMode('text')}
-                    className={`px-3 py-2 rounded-lg transition-all duration-300 ${
-                      priorityViewMode === 'text' 
-                        ? 'bg-gradient-to-r from-red-500 to-orange-500 text-white shadow-lg' 
-                        : 'text-red-600 dark:text-red-400 hover:bg-red-200/50 dark:hover:bg-red-800/50'
-                    }`}
-                    data-testid="button-priority-text-view"
-                  >
-                    <List className="h-4 w-4 mr-2" />
-                    Liste
-                  </Button>
-                </div>
+              <div>
+                <h3 className="text-xl font-bold bg-gradient-to-r from-red-600 via-orange-600 to-red-700 bg-clip-text text-transparent">
+                  🔥 Öncelik Konuları
+                </h3>
+                <p className="text-sm text-red-600/70 dark:text-red-400/70 font-medium">
+                  Yanlış konu analizlerinden en çok çalışılması gerekenler
+                </p>
               </div>
             </div>
             
-            {priorityTopicsData.length === 0 ? (
-              <div className="text-center py-20 text-muted-foreground">
-                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-red-100 to-orange-100 dark:from-red-900/30 dark:to-orange-900/30 flex items-center justify-center mx-auto mb-6 shadow-lg">
-                  <AlertTriangle className="h-10 w-10 text-red-500" />
-                </div>
-                <h4 className="text-lg font-semibold text-red-700 dark:text-red-300 mb-2">Henüz öncelik verisi yok</h4>
-                <p className="text-sm opacity-75 mb-4">Yanlış konular ekleyince burada görünecek</p>
-                <div className="flex justify-center space-x-1">
-                  <div className="w-2 h-2 rounded-full bg-red-500 animate-bounce"></div>
-                  <div className="w-2 h-2 rounded-full bg-orange-500 animate-bounce delay-100"></div>
-                  <div className="w-2 h-2 rounded-full bg-red-600 animate-bounce delay-200"></div>
-                </div>
+            <div className="text-xs text-muted-foreground bg-red-100/60 dark:bg-red-900/30 px-3 py-1 rounded-full border border-red-200/50 dark:border-red-700/50">
+              {priorityTopicsData.length} konu
+            </div>
+          </div>
+            
+          {/* HORIZONTAL Priority Topics Display */}
+          {priorityTopicsData.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground">
+              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-red-100 to-orange-100 dark:from-red-900/30 dark:to-orange-900/30 flex items-center justify-center mx-auto mb-4 shadow-lg">
+                <AlertTriangle className="h-8 w-8 text-red-500" />
               </div>
-            ) : priorityViewMode === 'chart' ? (
-              /* Chart View */
-              <div className="h-80">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={priorityTopicsData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
-                    <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-                    <XAxis 
-                      dataKey="topic"
-                      className="text-xs text-muted-foreground"
-                      tick={{ fontSize: 11, textAnchor: 'end' }}
-                      angle={-45}
-                      height={80}
-                    />
-                    <YAxis 
-                      className="text-xs text-muted-foreground"
-                      tick={{ fontSize: 12 }}
-                      label={{ value: 'Öncelik %', angle: -90, position: 'insideLeft' }}
-                    />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: 'hsl(var(--card))',
-                        border: '1px solid hsl(var(--border))',
-                        borderRadius: '12px',
-                        fontSize: '13px',
-                        boxShadow: '0 8px 32px rgba(0,0,0,0.1)'
-                      }}
-                      formatter={(value: any, name: any, props: any) => [
-                        `%${typeof value === 'number' ? value.toFixed(1) : value}`,
-                        props.payload.improvementNeeded ? '🔥 Acil Öncelik' : '⚠️ Dikkat Gerekli'
-                      ]}
-                      labelFormatter={(label: any, payload: any) => payload?.[0]?.payload?.fullTopic || label}
-                    />
-                    <Bar dataKey="priority" radius={[4, 4, 0, 0]}>
-                      {priorityTopicsData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            ) : (
-              /* Text View */
-              <div className="space-y-4 max-h-80 overflow-y-auto">
-                {priorityTopics.slice(0, 10).map((topic, index) => (
-                  <div 
-                    key={index}
-                    className="group bg-gradient-to-r from-white/90 to-red-50/50 dark:from-slate-800/90 dark:to-red-950/50 rounded-2xl border border-red-200/50 dark:border-red-700/30 p-5 hover:shadow-xl transition-all duration-500 hover:scale-[1.02] relative overflow-hidden"
-                    data-testid={`priority-topic-item-${index}`}
-                  >
-                    {/* Priority Ranking Badge */}
-                    <div className="absolute top-3 left-3">
-                      <div className={`flex items-center justify-center w-8 h-8 rounded-full text-white text-sm font-bold shadow-lg ${
-                        topic.improvementNeeded 
-                          ? 'bg-gradient-to-br from-red-500 to-red-600' 
-                          : topic.priority > 70 
-                            ? 'bg-gradient-to-br from-orange-500 to-orange-600'
-                            : 'bg-gradient-to-br from-yellow-500 to-yellow-600'
-                      }`}>
-                        #{index + 1}
-                      </div>
-                    </div>
-                    
-                    <div className="pl-12 space-y-3">
-                      {/* Topic Name and Priority */}
-                      <div className="flex items-center justify-between">
-                        <h4 className="font-bold text-lg text-red-800 dark:text-red-200 group-hover:text-red-600 transition-colors">
-                          {topic.topic}
-                        </h4>
-                        <div className="text-right">
-                          <div className="text-2xl font-bold text-red-600 dark:text-red-400">
-                            %{typeof topic.priority === 'number' ? topic.priority.toFixed(1) : topic.priority}
-                          </div>
-                          <div className="text-xs text-red-600/70 dark:text-red-400/70">öncelik</div>
-                        </div>
-                      </div>
-                      
-                      {/* Status and Last Seen */}
-                      <div className="flex items-center justify-between">
-                        <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium ${
-                          topic.improvementNeeded
-                            ? 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300'
-                            : 'bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-300'
-                        }`}>
-                          {topic.improvementNeeded ? (
-                            <>
-                              <AlertTriangle className="h-3 w-3" />
-                              🔥 Acil Öncelik
-                            </>
-                          ) : (
-                            <>
-                              <Target className="h-3 w-3" />
-                              ⚠️ Dikkat Gerekli
-                            </>
-                          )}
-                        </div>
-                        
-                        <div className="flex items-center gap-1 text-xs text-red-600/70 dark:text-red-400/70">
-                          <Clock className="h-3 w-3" />
-                          Son: {new Date(topic.lastSeen).toLocaleDateString('tr-TR')}
-                        </div>
-                      </div>
-                      
-                      {/* Progress Bar */}
-                      <div className="w-full bg-red-100 dark:bg-red-900/30 rounded-full h-2">
-                        <div 
-                          className={`h-2 rounded-full transition-all duration-700 ${
-                            topic.improvementNeeded 
-                              ? 'bg-gradient-to-r from-red-500 to-red-600' 
-                              : topic.priority > 70 
-                                ? 'bg-gradient-to-r from-orange-500 to-orange-600'
-                                : 'bg-gradient-to-r from-yellow-500 to-yellow-600'
-                          }`}
-                          style={{ width: `${topic.priority}%` }}
-                        />
-                      </div>
+              <h4 className="text-lg font-semibold text-red-700 dark:text-red-300 mb-2">Henüz öncelik verisi yok</h4>
+              <p className="text-sm opacity-75 mb-3">Soru analizi yaparken yanlış konular ekleyince burada görünecek</p>
+            </div>
+          ) : (
+            /* HORIZONTAL Grid Layout */
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
+              {priorityTopics.slice(0, 8).map((topic, index) => (
+                <div 
+                  key={index}
+                  className="group bg-gradient-to-br from-white/90 to-red-50/50 dark:from-slate-800/90 dark:to-red-950/50 rounded-xl border border-red-200/50 dark:border-red-700/30 p-4 hover:shadow-xl transition-all duration-300 hover:scale-[1.02] relative overflow-hidden"
+                  data-testid={`priority-topic-item-${index}`}
+                >
+                  {/* Priority Ranking Badge */}
+                  <div className="absolute top-2 right-2">
+                    <div className={`flex items-center justify-center w-6 h-6 rounded-full text-white text-xs font-bold shadow-lg ${
+                      topic.improvementNeeded 
+                        ? 'bg-gradient-to-br from-red-500 to-red-600' 
+                        : topic.priority > 70 
+                          ? 'bg-gradient-to-br from-orange-500 to-orange-600'
+                          : 'bg-gradient-to-br from-yellow-500 to-yellow-600'
+                    }`}>
+                      #{index + 1}
                     </div>
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
+                  
+                  <div className="space-y-2">
+                    {/* Topic Name */}
+                    <h4 className="font-bold text-sm text-red-800 dark:text-red-200 group-hover:text-red-600 transition-colors pr-8">
+                      {topic.topic.length > 20 ? `${topic.topic.substring(0, 20)}...` : topic.topic}
+                    </h4>
+                    
+                    {/* Priority Percentage */}
+                    <div className="text-center">
+                      <div className="text-xl font-bold text-red-600 dark:text-red-400">
+                        %{typeof topic.priority === 'number' ? topic.priority.toFixed(0) : topic.priority}
+                      </div>
+                      <div className="text-xs text-red-600/70 dark:text-red-400/70">öncelik</div>
+                    </div>
+                    
+                    {/* Status Badge */}
+                    <div className={`text-center px-2 py-1 rounded-full text-xs font-medium ${
+                      topic.improvementNeeded
+                        ? 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300'
+                        : 'bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-300'
+                    }`}>
+                      {topic.improvementNeeded ? '🔥 Acil' : '⚠️ Dikkat'}
+                    </div>
+                    
+                    {/* Wrong Mentions Count */}
+                    <div className="text-center text-xs text-muted-foreground">
+                      {topic.wrongMentions} yanlış
+                    </div>
+                    
+                    {/* Progress Bar */}
+                    <div className="w-full bg-red-100 dark:bg-red-900/30 rounded-full h-1.5">
+                      <div 
+                        className={`h-1.5 rounded-full transition-all duration-700 ${
+                          topic.improvementNeeded 
+                            ? 'bg-gradient-to-r from-red-500 to-red-600' 
+                            : topic.priority > 70 
+                              ? 'bg-gradient-to-r from-orange-500 to-orange-600'
+                              : 'bg-gradient-to-r from-yellow-500 to-yellow-600'
+                        }`}
+                        style={{ width: `${topic.priority}%` }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
+      </div>
 
-        {/* Enhanced Error Frequency Analysis with Toggle */}
-        <div className="bg-gradient-to-br from-blue-50/60 via-card to-purple-50/40 dark:from-blue-950/30 dark:via-card dark:to-purple-950/25 rounded-2xl border-2 border-blue-200/40 dark:border-blue-800/40 p-8 relative overflow-hidden shadow-2xl backdrop-blur-sm">
-          <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-blue-500/10 to-purple-500/10 rounded-full blur-3xl animate-pulse"></div>
+      {/* MOVED: Error Frequency Analysis below Priority Topics */}
+      <div className="bg-gradient-to-br from-blue-50/60 via-card to-purple-50/40 dark:from-blue-950/30 dark:via-card dark:to-purple-950/25 rounded-2xl border-2 border-blue-200/40 dark:border-blue-800/40 p-8 relative overflow-hidden shadow-2xl backdrop-blur-sm">
+        <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-blue-500/10 to-purple-500/10 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute -bottom-8 -left-8 w-32 h-32 bg-gradient-to-tr from-purple-500/10 to-blue-500/10 rounded-full blur-2xl"></div>
+        <div className="relative">
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center space-x-3">
+              <div className="p-3 bg-gradient-to-br from-blue-500 via-purple-500 to-blue-600 rounded-xl shadow-lg">
+                <Brain className="h-6 w-6 text-white drop-shadow-lg" />
+              </div>
+              <div>
+                <h3 className="text-2xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-blue-700 bg-clip-text text-transparent">
+                  📊 Hata Sıklığı Analizi
+                </h3>
+                <p className="text-sm text-blue-600/70 dark:text-blue-400/70 font-medium">
+                  Yanlış konu analizlerinden en sık yapılan hatalar
+                </p>
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-4">
+              <div className="text-xs text-muted-foreground bg-blue-100/60 dark:bg-blue-900/30 px-4 py-2 rounded-full border border-blue-200/50 dark:border-blue-700/50">
+                Toplam {topicErrorData.reduce((sum, item) => sum + item.errors, 0)} hata
+              </div>
+              
+              {/* View Toggle Buttons */}
+              <div className="flex bg-blue-100/50 dark:bg-blue-900/30 rounded-xl p-1 border border-blue-200/50 dark:border-blue-700/50">
+                <Button
+                  variant={errorViewMode === 'chart' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setErrorViewMode('chart')}
+                  className={`px-3 py-2 rounded-lg transition-all duration-300 ${
+                    errorViewMode === 'chart' 
+                      ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg' 
+                      : 'text-blue-600 dark:text-blue-400 hover:bg-blue-200/50 dark:hover:bg-blue-800/50'
+                  }`}
+                  data-testid="button-error-chart-view"
+                >
+                  <BarChartIcon className="h-4 w-4 mr-2" />
+                  Grafik
+                </Button>
+                <Button
+                  variant={errorViewMode === 'text' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setErrorViewMode('text')}
+                  className={`px-3 py-2 rounded-lg transition-all duration-300 ${
+                    errorViewMode === 'text' 
+                      ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg' 
+                      : 'text-blue-600 dark:text-blue-400 hover:bg-blue-200/50 dark:hover:bg-blue-800/50'
+                  }`}
+                  data-testid="button-error-text-view"
+                >
+                  <List className="h-4 w-4 mr-2" />
+                  Liste
+                </Button>
+              </div>
+            </div>
+          </div>
           <div className="absolute -bottom-8 -left-8 w-32 h-32 bg-gradient-to-tr from-purple-500/10 to-blue-500/10 rounded-full blur-2xl"></div>
           <div className="relative">
             <div className="flex items-center justify-between mb-8">
@@ -637,29 +600,57 @@ export function AdvancedCharts() {
         <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-indigo-500/10 to-purple-500/10 rounded-full blur-3xl animate-pulse"></div>
         <div className="absolute -bottom-8 -left-8 w-32 h-32 bg-gradient-to-tr from-purple-500/10 to-indigo-500/10 rounded-full blur-2xl"></div>
         <div className="relative">
-          <div className="flex items-center justify-between mb-8">
-            <div className="flex items-center space-x-3">
-              <div className="p-3 bg-gradient-to-br from-indigo-500 via-purple-500 to-indigo-600 rounded-xl shadow-lg">
-                <BarChart3 className="h-6 w-6 text-white drop-shadow-lg" />
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-8">
+            {/* LEFT SIDE: Header + Date Controls */}
+            <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+              <div className="flex items-center space-x-3">
+                <div className="p-3 bg-gradient-to-br from-indigo-500 via-purple-500 to-indigo-600 rounded-xl shadow-lg">
+                  <BarChart3 className="h-6 w-6 text-white drop-shadow-lg" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-700 bg-clip-text text-transparent">
+                    📊 Gelişim & Dağılım Analizi
+                  </h3>
+                  <p className="text-sm text-indigo-600/70 dark:text-indigo-400/70 font-medium">
+                    {bottomChartMode === 'net' ? 'Net ve soru verilerini görüntüle' : 'Ders başarı dağılımını analiz et'}
+                  </p>
+                </div>
               </div>
-              <div>
-                <h3 className="text-2xl font-bold bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-700 bg-clip-text text-transparent">
-                  📊 Gelişim & Dağılım Analizi
-                </h3>
-                <p className="text-sm text-indigo-600/70 dark:text-indigo-400/70 font-medium">
-                  {bottomChartMode === 'net' ? 'Deneme performans ilerlemesi' : 'Ders başarı dağılımı'}
-                </p>
-              </div>
+              
+              {/* DATE CONTROLS - NOW ON LEFT SIDE */}
+              {bottomChartMode === 'net' && (
+                <div className="flex items-center gap-2 ml-auto sm:ml-0">
+                  <Button
+                    variant={useCustomDates ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setUseCustomDates(!useCustomDates)}
+                    className={`text-xs px-3 py-2 font-medium transition-all duration-200 ${
+                      useCustomDates
+                        ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow-lg'
+                        : 'hover:bg-indigo-50 dark:hover:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 border-indigo-300 dark:border-indigo-600'
+                    }`}
+                    data-testid="button-chart-dates"
+                  >
+                    <Calendar className="h-3 w-3 mr-1" />
+                    {useCustomDates ? 'Tarih Aralığı' : 'Tarih Seç'}
+                  </Button>
+                  {!useCustomDates && (
+                    <div className="text-xs text-muted-foreground bg-indigo-100/60 dark:bg-indigo-900/30 px-3 py-2 rounded-lg border border-indigo-200/50 dark:border-indigo-700/50">
+                      Tüm veriler
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
             
-            <div className="flex items-center gap-4">
-              {/* Chart Type Toggle Buttons */}
+            {/* RIGHT SIDE: Chart Type Toggle Buttons - FIXED WIDTH */}
+            <div className="flex-shrink-0">
               <div className="flex bg-indigo-100/50 dark:bg-indigo-900/30 rounded-xl p-1 border border-indigo-200/50 dark:border-indigo-700/50">
                 <Button
                   variant={bottomChartMode === 'net' ? 'default' : 'ghost'}
                   size="sm"
                   onClick={() => setBottomChartMode('net')}
-                  className={`px-3 py-2 rounded-lg transition-all duration-300 ${
+                  className={`px-4 py-2 rounded-lg transition-all duration-300 whitespace-nowrap ${
                     bottomChartMode === 'net' 
                       ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow-lg' 
                       : 'text-indigo-600 dark:text-indigo-400 hover:bg-indigo-200/50 dark:hover:bg-indigo-800/50'
@@ -673,7 +664,7 @@ export function AdvancedCharts() {
                   variant={bottomChartMode === 'subject' ? 'default' : 'ghost'}
                   size="sm"
                   onClick={() => setBottomChartMode('subject')}
-                  className={`px-3 py-2 rounded-lg transition-all duration-300 ${
+                  className={`px-4 py-2 rounded-lg transition-all duration-300 whitespace-nowrap ${
                     bottomChartMode === 'subject' 
                       ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow-lg' 
                       : 'text-indigo-600 dark:text-indigo-400 hover:bg-indigo-200/50 dark:hover:bg-indigo-800/50'
@@ -684,30 +675,6 @@ export function AdvancedCharts() {
                   🎯 Ders Dağılımı
                 </Button>
               </div>
-              
-              {bottomChartMode === 'net' && (
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant={useCustomDates ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => setUseCustomDates(!useCustomDates)}
-                    className={`text-xs px-3 py-1 h-auto font-medium transition-all duration-200 ${
-                      useCustomDates
-                        ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow-lg'
-                        : 'hover:bg-indigo-50 dark:hover:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-700'
-                    }`}
-                    data-testid="button-chart-dates"
-                  >
-                    <Calendar className="h-3 w-3 mr-1" />
-                    Tarih Seç
-                  </Button>
-                  {!useCustomDates && (
-                    <div className="text-xs text-muted-foreground bg-indigo-100/60 dark:bg-indigo-900/30 px-4 py-2 rounded-full border border-indigo-200/50 dark:border-indigo-700/50">
-                      Son {netProgressionData.length} deneme
-                    </div>
-                  )}
-                </div>
-              )}
             </div>
           </div>
           
