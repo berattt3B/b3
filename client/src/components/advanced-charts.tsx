@@ -1,7 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, BarChart, Bar, Cell } from "recharts";
-import { TrendingUp, Target, Activity, AlertTriangle, BarChart3, Brain } from "lucide-react";
+import { TrendingUp, Target, Activity, AlertTriangle, BarChart3, Brain, Loader2 } from "lucide-react";
 import { ExamResult, ExamSubjectNet } from "@shared/schema";
+import { useMemo } from "react";
 
 interface TopicStats {
   topic: string;
@@ -18,30 +19,32 @@ interface PriorityTopic {
 }
 
 export function AdvancedCharts() {
-  const { data: examResults = [] } = useQuery<ExamResult[]>({
+  const { data: examResults = [], isLoading: isLoadingExams } = useQuery<ExamResult[]>({
     queryKey: ["/api/exam-results"],
   });
   
-  const { data: examSubjectNets = [] } = useQuery<ExamSubjectNet[]>({
+  const { data: examSubjectNets = [], isLoading: isLoadingNets } = useQuery<ExamSubjectNet[]>({
     queryKey: ["/api/exam-subject-nets"],
   });
 
   // NEW: Topic analytics queries
-  const { data: topicStats = [] } = useQuery<TopicStats[]>({
+  const { data: topicStats = [], isLoading: isLoadingTopics } = useQuery<TopicStats[]>({
     queryKey: ["/api/topics/stats"],
   });
 
-  const { data: priorityTopics = [] } = useQuery<PriorityTopic[]>({
+  const { data: priorityTopics = [], isLoading: isLoadingPriority } = useQuery<PriorityTopic[]>({
     queryKey: ["/api/topics/priority"],
   });
 
   // Flashcard error analytics
-  const { data: flashcardErrors = [] } = useQuery<any[]>({
+  const { data: flashcardErrors = [], isLoading: isLoadingFlashcards } = useQuery<any[]>({
     queryKey: ["/api/flashcards/errors"],
   });
 
+  const isLoading = isLoadingExams || isLoadingNets || isLoadingTopics || isLoadingPriority || isLoadingFlashcards;
+
   // Prepare line chart data for net progression over time
-  const prepareNetProgressionData = () => {
+  const netProgressionData = useMemo(() => {
     // Sort exams by date descending to get latest 10, then reverse for chronological order
     const sortedExams = [...examResults]
       .sort((a, b) => new Date(b.exam_date).getTime() - new Date(a.exam_date).getTime())
@@ -57,10 +60,10 @@ export function AdvancedCharts() {
       TYTTarget: 80, // Target line for TYT
       AYTTarget: 40  // Target line for AYT
     }));
-  };
+  }, [examResults]);
 
   // Prepare radar chart data for subject distribution (latest exam)
-  const prepareSubjectRadarData = () => {
+  const radarChartData = useMemo(() => {
     if (examResults.length === 0) return [];
     
     // Sort exams by date descending to get the actual latest exam
@@ -89,7 +92,7 @@ export function AdvancedCharts() {
         maxPercentage: 100
       };
     });
-  };
+  }, [examResults, examSubjectNets]);
 
   // NEW: Prepare priority topics data for bar chart
   const preparePriorityTopicsData = () => {
@@ -149,8 +152,7 @@ export function AdvancedCharts() {
       .slice(0, 8); // Show top 8 most problematic topics
   };
 
-  const lineChartData = prepareNetProgressionData();
-  const radarChartData = prepareSubjectRadarData();
+  const lineChartData = netProgressionData;
   const priorityTopicsData = preparePriorityTopicsData();
   const topicErrorData = prepareTopicErrorData();
 
@@ -242,8 +244,8 @@ export function AdvancedCharts() {
             {topicErrorData.length === 0 ? (
               <div className="text-center py-16 text-muted-foreground">
                 <BarChart3 className="h-12 w-12 mx-auto mb-4 opacity-40" />
-                <p className="text-sm font-medium">Henüz hata analizi yok</p>
-                <p className="text-xs mt-1">Yanlış konularını belirtmeye başla</p>
+                <p className="text-sm font-medium">Henüz hata verisi bulunmuyor</p>
+                <p className="text-xs mt-1">Yanlış yaptığınız konuları işaretlemeye başlayın</p>
               </div>
             ) : (
               <div className="h-80">
@@ -407,7 +409,7 @@ export function AdvancedCharts() {
               <div className="text-center py-16 text-muted-foreground">
                 <Target className="h-12 w-12 mx-auto mb-4 opacity-50" />
                 <p className="text-sm">Ders net verisi bulunmuyor</p>
-                <p className="text-xs mt-1">Deneme sonuçlarına ders netleri ekleyin</p>
+                <p className="text-xs mt-1">Deneme ekleyip ders netlerini girin</p>
               </div>
             ) : (
               <div className="h-80">
