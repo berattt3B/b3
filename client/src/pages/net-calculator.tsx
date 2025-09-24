@@ -450,13 +450,13 @@ export default function NetCalculator() {
                   <div className="text-4xl font-bold text-blue-600 mb-2">{tytNet.toFixed(2)}</div>
                   <div className="text-lg font-medium text-muted-foreground mb-4">TYT Net</div>
                   <Progress value={(tytNet / 120) * 100} className="h-3" />
-                  <div className="text-sm text-muted-foreground mt-2">/ 120 soruden</div>
+                  <div className="text-sm text-muted-foreground mt-2">/ 120 sorudan</div>
                 </div>
                 <div className="text-center bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950/50 dark:to-green-900/50 rounded-xl p-6 border border-green-200 dark:border-green-800/50 shadow-lg hover:shadow-xl transition-all duration-300">
                   <div className="text-4xl font-bold text-green-600 mb-2">{aytNet.toFixed(2)}</div>
                   <div className="text-lg font-medium text-muted-foreground mb-4">AYT Net</div>
                   <Progress value={(aytNet / 80) * 100} className="h-3" />
-                  <div className="text-sm text-muted-foreground mt-2">/ 80 soruden</div>
+                  <div className="text-sm text-muted-foreground mt-2">/ 80 sorudan</div>
                 </div>
                 <div className="text-center bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950/50 dark:to-purple-900/50 rounded-xl p-6 border border-purple-200 dark:border-purple-800/50 shadow-lg hover:shadow-xl transition-all duration-300">
                   <div className="text-4xl font-bold text-purple-600 mb-2">{obp.toFixed(2)}</div>

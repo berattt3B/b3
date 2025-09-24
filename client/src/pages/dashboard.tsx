@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback, memo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Header } from "@/components/header";
 import { Link, useLocation } from "wouter";
@@ -7,7 +7,7 @@ import { Task, Goal, QuestionLog, InsertQuestionLog, ExamResult, InsertExamResul
 import { DashboardSummaryCards } from "@/components/dashboard-summary-cards";
 import { AdvancedCharts } from "@/components/advanced-charts";
 import { QuestionAnalysisCharts } from "@/components/question-analysis-charts";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -152,6 +152,53 @@ export default function Dashboard() {
     queryKey: ["/api/topics/priority"],
   });
 
+  // Optimized calculations with useMemo to prevent unnecessary re-renders
+  const memoizedStats = useMemo(() => {
+    const totalQuestions = questionLogs.reduce((sum, log) => {
+      return sum + (parseInt(log.correct_count) || 0) + (parseInt(log.wrong_count) || 0) + (parseInt(log.blank_count) || 0);
+    }, 0);
+
+    const totalCorrect = questionLogs.reduce((sum, log) => {
+      return sum + (parseInt(log.correct_count) || 0);
+    }, 0);
+
+    const totalWrong = questionLogs.reduce((sum, log) => {
+      return sum + (parseInt(log.wrong_count) || 0);
+    }, 0);
+
+    const averageAccuracy = totalQuestions > 0 ? (totalCorrect / totalQuestions) * 100 : 0;
+    
+    return {
+      totalQuestions,
+      totalCorrect,
+      totalWrong,
+      averageAccuracy
+    };
+  }, [questionLogs]);
+
+  const memoizedExamStats = useMemo(() => {
+    const totalExams = examResults.length;
+    const tytExams = examResults.filter(exam => exam.tyt_net && parseFloat(exam.tyt_net) > 0).length;
+    const aytExams = examResults.filter(exam => exam.ayt_net && parseFloat(exam.ayt_net) > 0).length;
+    
+    const lastTytNet = examResults
+      .filter(exam => exam.tyt_net && parseFloat(exam.tyt_net) > 0)
+      .sort((a, b) => new Date(b.exam_date).getTime() - new Date(a.exam_date).getTime())[0]?.tyt_net || "0";
+    
+    const lastAytNet = examResults
+      .filter(exam => exam.ayt_net && parseFloat(exam.ayt_net) > 0)
+      .sort((a, b) => new Date(b.exam_date).getTime() - new Date(a.exam_date).getTime())[0]?.ayt_net || "0";
+
+    return {
+      totalExams,
+      tytExams,
+      aytExams,
+      lastTytNet: parseFloat(lastTytNet),
+      lastAytNet: parseFloat(lastAytNet)
+    };
+  }, [examResults]);
+
+
   const createQuestionLogMutation = useMutation({
     mutationFn: (data: InsertQuestionLog) => apiRequest("POST", "/api/question-logs", data),
     onSuccess: () => {
@@ -245,6 +292,102 @@ export default function Dashboard() {
       toast({ title: "Hata", description: "Deneme sonucu silinemedi.", variant: "destructive" });
     },
   });
+
+  // Optimized event handlers with useCallback to prevent re-renders
+  const handleQuestionLogSubmit = useCallback(() => {
+    const questionData: InsertQuestionLog = {
+      exam_type: newQuestion.exam_type,
+      subject: newQuestion.subject,
+      correct_count: newQuestion.correct_count,
+      wrong_count: newQuestion.wrong_count,
+      blank_count: newQuestion.blank_count,
+      study_date: newQuestion.study_date,
+      wrong_topics: JSON.stringify(newQuestion.wrong_topics),
+      time_spent_minutes: newQuestion.time_spent_minutes
+    };
+
+    if (editingQuestionLog) {
+      updateQuestionLogMutation.mutate({ id: editingQuestionLog.id, data: questionData });
+    } else {
+      createQuestionLogMutation.mutate(questionData);
+    }
+  }, [newQuestion, editingQuestionLog, updateQuestionLogMutation, createQuestionLogMutation]);
+
+  const handleResetQuestionForm = useCallback(() => {
+    setNewQuestion({ 
+      exam_type: "TYT", 
+      subject: "Türkçe", 
+      correct_count: "", 
+      wrong_count: "", 
+      blank_count: "", 
+      study_date: new Date().toISOString().split('T')[0],
+      wrong_topics: [],
+      time_spent_minutes: ""
+    });
+    setWrongTopicInput("");
+    setEditingQuestionLog(null);
+    setShowQuestionDialog(false);
+  }, []);
+
+  const handleAddWrongTopic = useCallback(() => {
+    if (wrongTopicInput.trim()) {
+      const topic = {
+        topic: toTitleCase(wrongTopicInput.trim()),
+        difficulty: selectedTopicDifficulty,
+        category: selectedTopicCategory,
+        notes: ""
+      };
+      setNewQuestion(prev => ({
+        ...prev,
+        wrong_topics: [...prev.wrong_topics, topic]
+      }));
+      setWrongTopicInput("");
+    }
+  }, [wrongTopicInput, selectedTopicDifficulty, selectedTopicCategory]);
+
+  const handleRemoveWrongTopic = useCallback((index: number) => {
+    setNewQuestion(prev => ({
+      ...prev,
+      wrong_topics: prev.wrong_topics.filter((_, i) => i !== index)
+    }));
+  }, []);
+
+  const handleExamResultSubmit = useCallback(() => {
+    // TYT Subjects: Türkçe, Sosyal, Matematik, Fen
+    const tytSubjects = ['turkce', 'sosyal', 'matematik', 'fen'];
+    // AYT Subjects: Matematik, Fizik, Kimya, Biyoloji  
+    const aytSubjects = ['matematik', 'fizik', 'kimya', 'biyoloji'];
+    
+    // Calculate TYT Net
+    let tytNet = 0;
+    tytSubjects.forEach(subjectKey => {
+      const subject = newExamResult.subjects[subjectKey];
+      if (subject) {
+        const correct = parseInt(subject.correct) || 0;
+        const wrong = parseInt(subject.wrong) || 0;
+        tytNet += correct - (wrong * 0.25);
+      }
+    });
+    
+    // Calculate AYT Net
+    let aytNet = 0;
+    aytSubjects.forEach(subjectKey => {
+      const subject = newExamResult.subjects[subjectKey];
+      if (subject) {
+        const correct = parseInt(subject.correct) || 0;
+        const wrong = parseInt(subject.wrong) || 0;
+        aytNet += correct - (wrong * 0.25);
+      }
+    });
+    
+    createExamResultMutation.mutate({
+      exam_name: newExamResult.exam_name,
+      exam_date: newExamResult.exam_date,
+      tyt_net: Math.max(0, tytNet).toFixed(2), // Ensure non-negative and 2 decimal places
+      ayt_net: Math.max(0, aytNet).toFixed(2), // Ensure non-negative and 2 decimal places
+      subjects_data: JSON.stringify(newExamResult.subjects)
+    });
+  }, [newExamResult, createExamResultMutation]);
 
   // Subject options based on TYT/AYT
   const getSubjectOptions = (examType: string) => {
@@ -1007,6 +1150,9 @@ export default function Dashboard() {
                 </>
               )}
             </DialogTitle>
+            <DialogDescription>
+              Seçilen gün için detaylı aktivite bilgilerini görüntüleyin.
+            </DialogDescription>
           </DialogHeader>
           {selectedHeatmapDay && (
             <div className="space-y-6">
@@ -1044,7 +1190,11 @@ export default function Dashboard() {
                         </div>
                         {question.wrong_topics && question.wrong_topics.length > 0 && (
                           <div className="text-xs text-red-600 mt-1">
-                            {question.wrong_topics.join(', ')}
+                            {question.wrong_topics.map((topic: string) => {
+                              // Remove TYT/AYT prefix and extra details like "- Berat"
+                              const cleanTopic = topic.replace(/^(TYT|AYT)\s+[^-]+-\s*/, '').split(' - ')[0];
+                              return cleanTopic;
+                            }).join(', ')}
                           </div>
                         )}
                       </div>
@@ -1111,6 +1261,9 @@ export default function Dashboard() {
             <DialogTitle>
               {editingQuestionLog ? 'Soru Kaydını Düzenle' : 'Yeni Soru Kaydı'}
             </DialogTitle>
+            <DialogDescription>
+              Soru çözüm kaydınızı ekleyin veya düzenleyin.
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
@@ -1506,6 +1659,9 @@ export default function Dashboard() {
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Yeni Deneme Sonucu</DialogTitle>
+            <DialogDescription>
+              Deneme sınav sonuçlarınızı girin ve net analizinizi takip edin.
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
@@ -1731,12 +1887,19 @@ export default function Dashboard() {
                           value={currentWrongTopics.matematik || ""}
                           onChange={(e) => {
                             setCurrentWrongTopics({...currentWrongTopics, matematik: e.target.value});
-                            const topics = e.target.value.split(',').map(t => toTitleCase(t.trim())).filter(t => t.length > 0);
+                            const topics = e.target.value.split(',').map(t => {
+                              const cleanTopic = toTitleCase(t.trim());
+                              return cleanTopic ? `${newExamResult.exam_type} Matematik - ${cleanTopic}` : '';
+                            }).filter(t => t.length > 0);
+                            
+                            // Remove duplicates
+                            const uniqueTopics = [...new Set(topics)];
+                            
                             setNewExamResult({
                               ...newExamResult,
                               subjects: {
                                 ...newExamResult.subjects,
-                                matematik: { ...newExamResult.subjects.matematik, wrong_topics: topics }
+                                matematik: { ...newExamResult.subjects.matematik, wrong_topics: uniqueTopics }
                               }
                             });
                           }}
@@ -1833,12 +1996,19 @@ export default function Dashboard() {
                           value={currentWrongTopics.sosyal || ""}
                           onChange={(e) => {
                             setCurrentWrongTopics({...currentWrongTopics, sosyal: e.target.value});
-                            const topics = e.target.value.split(',').map(t => toTitleCase(t.trim())).filter(t => t.length > 0);
+                            const topics = e.target.value.split(',').map(t => {
+                              const cleanTopic = toTitleCase(t.trim());
+                              return cleanTopic ? `${newExamResult.exam_type} Sosyal Bilimler - ${cleanTopic}` : '';
+                            }).filter(t => t.length > 0);
+                            
+                            // Remove duplicates
+                            const uniqueTopics = [...new Set(topics)];
+                            
                             setNewExamResult({
                               ...newExamResult,
                               subjects: {
                                 ...newExamResult.subjects,
-                                sosyal: { ...newExamResult.subjects.sosyal, wrong_topics: topics }
+                                sosyal: { ...newExamResult.subjects.sosyal, wrong_topics: uniqueTopics }
                               }
                             });
                           }}
@@ -1935,15 +2105,22 @@ export default function Dashboard() {
                           value={currentWrongTopics.fen || ""}
                           onChange={(e) => {
                             setCurrentWrongTopics({...currentWrongTopics, fen: e.target.value});
-                          const topics = e.target.value.split(',').map(t => toTitleCase(t.trim())).filter(t => t.length > 0);
-                          setNewExamResult({
-                            ...newExamResult,
-                            subjects: {
-                              ...newExamResult.subjects,
-                              fen: { ...newExamResult.subjects.fen, wrong_topics: topics }
-                            }
-                          });
-                        }}
+                            const topics = e.target.value.split(',').map(t => {
+                              const cleanTopic = toTitleCase(t.trim());
+                              return cleanTopic ? `${newExamResult.exam_type} Fen Bilimleri - ${cleanTopic}` : '';
+                            }).filter(t => t.length > 0);
+                            
+                            // Remove duplicates
+                            const uniqueTopics = [...new Set(topics)];
+                            
+                            setNewExamResult({
+                              ...newExamResult,
+                              subjects: {
+                                ...newExamResult.subjects,
+                                fen: { ...newExamResult.subjects.fen, wrong_topics: uniqueTopics }
+                              }
+                            });
+                          }}
                           placeholder="Örnek: fizik konuları, kimya bağları, biyoloji sistemleri..."
                           className="bg-white/90 dark:bg-gray-800/90 border-orange-300/60 dark:border-orange-600/50 focus:border-orange-500 dark:focus:border-orange-400 focus:ring-2 focus:ring-orange-200 dark:focus:ring-orange-800/50 rounded-xl shadow-sm text-sm"
                         />
@@ -2114,12 +2291,19 @@ export default function Dashboard() {
                         value={currentWrongTopics.fizik || ""}
                         onChange={(e) => {
                           setCurrentWrongTopics({...currentWrongTopics, fizik: e.target.value});
-                          const topics = e.target.value.split(',').map(t => toTitleCase(t.trim())).filter(t => t.length > 0);
+                          const topics = e.target.value.split(',').map(t => {
+                            const cleanTopic = toTitleCase(t.trim());
+                            return cleanTopic ? `${newExamResult.exam_type} Fizik - ${cleanTopic}` : '';
+                          }).filter(t => t.length > 0);
+                          
+                          // Remove duplicates
+                          const uniqueTopics = [...new Set(topics)];
+                          
                           setNewExamResult({
                             ...newExamResult,
                             subjects: {
                               ...newExamResult.subjects,
-                              fizik: { ...newExamResult.subjects.fizik, wrong_topics: topics }
+                              fizik: { ...newExamResult.subjects.fizik, wrong_topics: uniqueTopics }
                             }
                           });
                         }}
@@ -2198,12 +2382,19 @@ export default function Dashboard() {
                         value={currentWrongTopics.kimya || ""}
                         onChange={(e) => {
                           setCurrentWrongTopics({...currentWrongTopics, kimya: e.target.value});
-                          const topics = e.target.value.split(',').map(t => toTitleCase(t.trim())).filter(t => t.length > 0);
+                          const topics = e.target.value.split(',').map(t => {
+                            const cleanTopic = toTitleCase(t.trim());
+                            return cleanTopic ? `${newExamResult.exam_type} Kimya - ${cleanTopic}` : '';
+                          }).filter(t => t.length > 0);
+                          
+                          // Remove duplicates
+                          const uniqueTopics = [...new Set(topics)];
+                          
                           setNewExamResult({
                             ...newExamResult,
                             subjects: {
                               ...newExamResult.subjects,
-                              kimya: { ...newExamResult.subjects.kimya, wrong_topics: topics }
+                              kimya: { ...newExamResult.subjects.kimya, wrong_topics: uniqueTopics }
                             }
                           });
                         }}
@@ -2282,12 +2473,19 @@ export default function Dashboard() {
                         value={currentWrongTopics.biyoloji || ""}
                         onChange={(e) => {
                           setCurrentWrongTopics({...currentWrongTopics, biyoloji: e.target.value});
-                          const topics = e.target.value.split(',').map(t => toTitleCase(t.trim())).filter(t => t.length > 0);
+                          const topics = e.target.value.split(',').map(t => {
+                            const cleanTopic = toTitleCase(t.trim());
+                            return cleanTopic ? `${newExamResult.exam_type} Biyoloji - ${cleanTopic}` : '';
+                          }).filter(t => t.length > 0);
+                          
+                          // Remove duplicates
+                          const uniqueTopics = [...new Set(topics)];
+                          
                           setNewExamResult({
                             ...newExamResult,
                             subjects: {
                               ...newExamResult.subjects,
-                              biyoloji: { ...newExamResult.subjects.biyoloji, wrong_topics: topics }
+                              biyoloji: { ...newExamResult.subjects.biyoloji, wrong_topics: uniqueTopics }
                             }
                           });
                         }}

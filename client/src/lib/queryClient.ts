@@ -49,9 +49,46 @@ export const queryClient = new QueryClient({
       refetchOnWindowFocus: false,
       staleTime: Infinity,
       retry: false,
+      // Prevent duplicate requests
+      refetchOnMount: false,
+      refetchOnReconnect: false,
     },
     mutations: {
       retry: false,
     },
   },
 });
+
+// Specific optimizations for different types of data
+export const getQueryOptions = (key: string) => {
+  const optimizations: Record<string, any> = {
+    // Weather data - cache for 5 minutes
+    '/api/weather': {
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      cacheTime: 10 * 60 * 1000, // 10 minutes
+    },
+    // Calendar data - cache for 1 minute
+    '/api/calendar': {
+      staleTime: 1 * 60 * 1000, // 1 minute
+      cacheTime: 5 * 60 * 1000, // 5 minutes
+    },
+    // Flashcards - cache for 30 seconds
+    '/api/flashcards': {
+      staleTime: 30 * 1000, // 30 seconds
+      cacheTime: 2 * 60 * 1000, // 2 minutes
+    },
+    // Analytics data - cache more aggressively
+    '/api/question-logs': {
+      staleTime: 2 * 60 * 1000, // 2 minutes
+      cacheTime: 5 * 60 * 1000, // 5 minutes
+    },
+    '/api/exam-results': {
+      staleTime: 2 * 60 * 1000, // 2 minutes
+      cacheTime: 5 * 60 * 1000, // 5 minutes
+    },
+  };
+
+  // Find matching optimization
+  const matchedKey = Object.keys(optimizations).find(pattern => key.startsWith(pattern));
+  return matchedKey ? optimizations[matchedKey] : {};
+};

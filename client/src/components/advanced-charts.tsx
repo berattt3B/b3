@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from "recharts";
 import { TrendingUp, Target, Brain, AlertTriangle, BarChart3, Book, Calculator, Atom, FlaskConical, Dna, User, Calendar, TrendingDown, Check, CheckCircle } from "lucide-react";
 import { ExamResult, QuestionLog } from "@shared/schema";
-import { useMemo, useState } from "react";
+import { useMemo, useState, memo, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -36,10 +36,14 @@ interface SubjectAnalysisData {
   color: string;
 }
 
-export function AdvancedCharts() {
+function AdvancedChartsComponent() {
   const [analysisMode, setAnalysisMode] = useState<'net' | 'subject'>('net');
   const [completedTopics, setCompletedTopics] = useState<Set<string>>(new Set());
   const [celebratingTopics, setCelebratingTopics] = useState<Set<string>>(new Set());
+  const [completedErrorTopics, setCompletedErrorTopics] = useState<Set<string>>(new Set());
+  const [celebratingErrorTopics, setCelebratingErrorTopics] = useState<Set<string>>(new Set());
+  const [removedTopics, setRemovedTopics] = useState<Set<string>>(new Set());
+  const [removedErrorTopics, setRemovedErrorTopics] = useState<Set<string>>(new Set());
   const { toast } = useToast();
 
   const { data: examResults = [], isLoading: isLoadingExams } = useQuery<ExamResult[]>({
@@ -142,11 +146,12 @@ export function AdvancedCharts() {
     })).sort((a, b) => new Date(a.sortDate).getTime() - new Date(b.sortDate).getTime());
   }, [examResults]);
 
-  // Process Subject Analysis Data - For both card view and radar chart
-  const subjectAnalysisData = useMemo(() => {
-    const subjectMap = new Map<string, { correct: number; wrong: number; total: number }>();
+  // Process Subject Analysis Data - Separate for TYT and AYT
+  const { tytSubjectAnalysisData, aytSubjectAnalysisData } = useMemo(() => {
+    const tytSubjectMap = new Map<string, { correct: number; wrong: number; total: number }>();
+    const aytSubjectMap = new Map<string, { correct: number; wrong: number; total: number }>();
     
-    // Process exam results for subject data
+    // Process exam results for subject data, separating by exam type
     examResults.forEach(exam => {
       if (exam.subjects_data) {
         try {
@@ -166,13 +171,16 @@ export function AdvancedCharts() {
             const wrong = parseInt(data.wrong) || 0;
             
             if (correct > 0 || wrong > 0) {
-              if (subjectMap.has(subjectName)) {
-                const existing = subjectMap.get(subjectName)!;
+              // Choose the appropriate map based on exam type
+              const targetMap = exam.exam_type === 'TYT' ? tytSubjectMap : aytSubjectMap;
+              
+              if (targetMap.has(subjectName)) {
+                const existing = targetMap.get(subjectName)!;
                 existing.correct += correct;
                 existing.wrong += wrong;
                 existing.total += (correct + wrong);
               } else {
-                subjectMap.set(subjectName, {
+                targetMap.set(subjectName, {
                   correct,
                   wrong,
                   total: correct + wrong
@@ -196,16 +204,23 @@ export function AdvancedCharts() {
       'Biyoloji': '#06b6d4'
     };
 
-    return Array.from(subjectMap.entries()).map(([subject, data]) => ({
-      subject,
-      correct: data.correct,
-      wrong: data.wrong,
-      totalQuestions: data.total,
-      netScore: data.correct - (data.wrong * 0.25),
-      color: subjectColors[subject] || '#6b7280',
-      correctRate: data.total > 0 ? (data.correct / data.total) * 100 : 0,
-      wrongRate: data.total > 0 ? (data.wrong / data.total) * 100 : 0
-    }));
+    const processSubjectData = (subjectMap: Map<string, any>) => {
+      return Array.from(subjectMap.entries()).map(([subject, data]) => ({
+        subject,
+        correct: data.correct,
+        wrong: data.wrong,
+        totalQuestions: data.total,
+        netScore: data.correct - (data.wrong * 0.25),
+        color: subjectColors[subject] || '#6b7280',
+        correctRate: data.total > 0 ? (data.correct / data.total) * 100 : 0,
+        wrongRate: data.total > 0 ? (data.wrong / data.total) * 100 : 0
+      }));
+    };
+
+    return {
+      tytSubjectAnalysisData: processSubjectData(tytSubjectMap),
+      aytSubjectAnalysisData: processSubjectData(aytSubjectMap)
+    };
   }, [examResults]);
 
   if (isLoading) {
@@ -266,7 +281,7 @@ export function AdvancedCharts() {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-              {missingTopics.slice(0, 15).map((topic, index) => (
+              {missingTopics.slice(0, 15).filter(topic => !removedTopics.has(`${topic.subject}-${topic.topic}`)).map((topic, index) => (
                 <div key={index} className={`bg-white/70 dark:bg-gray-900/70 rounded-2xl p-6 border border-red-200/50 dark:border-red-700/50 hover:shadow-2xl transition-all duration-300 hover:scale-105 backdrop-blur-sm relative overflow-hidden group/card ${
                   celebratingTopics.has(`${topic.subject}-${topic.topic}`) ? 'animate-pulse bg-green-100/80 dark:bg-green-900/40 border-green-300 dark:border-green-600' : ''
                 } ${
@@ -290,21 +305,18 @@ export function AdvancedCharts() {
                               setCelebratingTopics(prev => new Set([...prev, topicKey]));
                               toast({ title: "🎉 Tebrikler!", description: `${topic.topic} konusunu tamamladınız!` });
                               
-                              // Remove celebrating animation after 3 seconds
+                              // Remove celebrating animation after 2 seconds and remove box after 3 seconds
                               setTimeout(() => {
                                 setCelebratingTopics(prev => {
                                   const newSet = new Set(prev);
                                   newSet.delete(topicKey);
                                   return newSet;
                                 });
-                                // Remove completed topic after celebration
-                                setTimeout(() => {
-                                  setCompletedTopics(prev => {
-                                    const newSet = new Set(prev);
-                                    newSet.delete(topicKey);
-                                    return newSet;
-                                  });
-                                }, 500);
+                              }, 2000);
+                              
+                              // Remove the entire box after 3 seconds
+                              setTimeout(() => {
+                                setRemovedTopics(prev => new Set([...prev, topicKey]));
                               }, 3000);
                             }
                           }}
@@ -517,8 +529,12 @@ export function AdvancedCharts() {
             
             return (
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                {wrongTopicAnalysisData.slice(0, 15).map((item: any, index) => (
-                  <div key={index} className="bg-white/70 dark:bg-gray-900/70 rounded-2xl p-6 border border-orange-200/50 dark:border-orange-700/50 hover:shadow-2xl transition-all duration-300 hover:scale-105 backdrop-blur-sm relative overflow-hidden group/card">
+                {wrongTopicAnalysisData.slice(0, 15).filter((item: any) => !removedErrorTopics.has(`${item.exam_type}-${item.subject}-${item.topic}`)).map((item: any, index) => {
+                  const errorTopicKey = `${item.exam_type}-${item.subject}-${item.topic}`;
+                  return (
+                  <div key={index} className={`bg-white/70 dark:bg-gray-900/70 rounded-2xl p-6 border border-orange-200/50 dark:border-orange-700/50 hover:shadow-2xl transition-all duration-300 hover:scale-105 backdrop-blur-sm relative overflow-hidden group/card ${
+                    celebratingErrorTopics.has(errorTopicKey) ? 'animate-pulse bg-green-100/80 dark:bg-green-900/40 border-green-300 dark:border-green-600' : ''
+                  }`}>
                     <div className="absolute inset-0 bg-gradient-to-br from-orange-50/50 to-red-50/30 dark:from-orange-950/20 dark:to-red-950/10 opacity-0 group-hover/card:opacity-100 transition-opacity duration-300"></div>
                     <div className="relative">
                       <div className="flex items-center justify-between mb-4">
@@ -530,14 +546,60 @@ export function AdvancedCharts() {
                             {item.exam_type} {item.subject}
                           </span>
                         </div>
-                        <div className="text-sm text-orange-600 dark:text-orange-400 bg-gradient-to-r from-orange-100 to-red-100 dark:from-orange-900/40 dark:to-red-900/40 px-3 py-1.5 rounded-full font-semibold shadow-md">
-                          {item.frequency} Kez
+                        <div className="flex items-center gap-3">
+                          <Checkbox
+                            checked={completedErrorTopics.has(errorTopicKey)}
+                            onCheckedChange={(checked) => {
+                              if (checked) {
+                                setCompletedErrorTopics(prev => new Set([...prev, errorTopicKey]));
+                                setCelebratingErrorTopics(prev => new Set([...prev, errorTopicKey]));
+                                toast({ title: "🎉 Tebrikler!", description: `${item.topic} konusundaki hatanızı çözdünüz!` });
+                                
+                                // Remove celebrating animation after 2 seconds and remove box after 3 seconds
+                                setTimeout(() => {
+                                  setCelebratingErrorTopics(prev => {
+                                    const newSet = new Set(prev);
+                                    newSet.delete(errorTopicKey);
+                                    return newSet;
+                                  });
+                                }, 2000);
+                                
+                                // Remove the entire box after 3 seconds
+                                setTimeout(() => {
+                                  setRemovedErrorTopics(prev => new Set([...prev, errorTopicKey]));
+                                }, 3000);
+                              } else {
+                                setCompletedErrorTopics(prev => {
+                                  const newSet = new Set(prev);
+                                  newSet.delete(errorTopicKey);
+                                  return newSet;
+                                });
+                                setRemovedErrorTopics(prev => {
+                                  const newSet = new Set(prev);
+                                  newSet.delete(errorTopicKey);
+                                  return newSet;
+                                });
+                              }
+                            }}
+                            className="data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500"
+                          />
+                          <div className="text-sm text-orange-600 dark:text-orange-400 bg-gradient-to-r from-orange-100 to-red-100 dark:from-orange-900/40 dark:to-red-900/40 px-3 py-1.5 rounded-full font-semibold shadow-md">
+                            {item.frequency} Kez
+                          </div>
                         </div>
                       </div>
                       
                       <div className="space-y-3 mb-4">
                         <div className="text-sm bg-white/50 dark:bg-gray-800/50 p-3 rounded-xl">
-                          <div className="font-semibold text-gray-700 dark:text-gray-300 mb-2">{item.topic}</div>
+                          <div className="flex items-center justify-between">
+                            <div className="font-semibold text-gray-700 dark:text-gray-300 mb-2 flex-1">{item.topic}</div>
+                            {celebratingErrorTopics.has(errorTopicKey) && (
+                              <div className="flex items-center gap-2 text-green-600 dark:text-green-400 animate-bounce">
+                                <CheckCircle className="h-5 w-5" />
+                                <span className="text-sm font-bold">Tebrikler!</span>
+                              </div>
+                            )}
+                          </div>
                           <div className="flex gap-2 flex-wrap">
                             {item.difficulty && (
                               <span className={`text-xs px-2 py-1 rounded-full font-medium ${
@@ -576,7 +638,8 @@ export function AdvancedCharts() {
                       </div>
                     </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             );
           })()}
@@ -633,26 +696,7 @@ export function AdvancedCharts() {
         <CardContent className="pt-6">
           {analysisMode === 'net' ? (
             // Net Analysis Chart with TYT/AYT targets display
-            netAnalysisData.length === 0 ? (
-              <div className="text-center py-12 text-muted-foreground">
-                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30 flex items-center justify-center mx-auto mb-6 shadow-lg">
-                  <TrendingUp className="h-10 w-10 text-blue-500" />
-                </div>
-                <h4 className="text-lg font-semibold text-blue-700 dark:text-blue-300 mb-2">Henüz deneme verisi yok</h4>
-                <p className="text-sm opacity-75 mb-4">Deneme sonucu ekleyerek net analizinizi görüntüleyin</p>
-                {/* Show targets even when no data */}
-                <div className="flex justify-center gap-8 mt-6">
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">TYT Hedef: 90</div>
-                    <div className="text-sm text-blue-500 dark:text-blue-400">TYT DENEME: 0 net</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-green-600 dark:text-green-400">AYT Hedef: 50</div>
-                    <div className="text-sm text-green-500 dark:text-green-400">AYT DENEME: 0 net</div>
-                  </div>
-                </div>
-              </div>
-            ) : (
+(
               <div className="space-y-6">
                 {/* Targets and Current Nets Display */}
                 <div className="grid grid-cols-2 gap-4 mb-6">
@@ -716,11 +760,13 @@ export function AdvancedCharts() {
                         const data = payload?.[0]?.payload;
                         return data ? `📊 ${data.examName} - ${label}` : label;
                       }}
-                      formatter={(value: any, name: any) => [
-                        `${value} net`,
-                        name === 'tytNet' ? '🔵 TYT Net' : name === 'aytNet' ? '🟢 AYT Net' : 
-                        name === 'tytTarget' ? '🎯 TYT Hedef' : '🎯 AYT Hedef'
-                      ]}
+                      formatter={(value: any, name: any) => {
+                        if (name === 'tytTarget') return [`${value} net`, '🔵 TYT Hedef: 90 net'];
+                        if (name === 'aytTarget') return [`${value} net`, '🔵 AYT Hedef: 50 net'];
+                        if (name === 'tytNet') return [`${value} net`, '🟢 TYT DENEME'];
+                        if (name === 'aytNet') return [`${value} net`, '🟢 AYT DENEME'];
+                        return [`${value} net`, name];
+                      }}
                     />
                     <Legend 
                       wrapperStyle={{ paddingTop: '30px', fontSize: '14px', fontWeight: 600 }}
@@ -778,8 +824,8 @@ export function AdvancedCharts() {
               </div>
             )
           ) : (
-            // Subject Analysis - Polygon/Radar Chart
-            subjectAnalysisData.length === 0 ? (
+            // Subject Analysis - Twin Radar Charts (TYT & AYT)
+            (tytSubjectAnalysisData.length === 0 && aytSubjectAnalysisData.length === 0) ? (
               <div className="text-center py-12 text-muted-foreground">
                 <div className="w-20 h-20 rounded-full bg-gradient-to-br from-purple-100 to-indigo-100 dark:from-purple-900/30 dark:to-indigo-900/30 flex items-center justify-center mx-auto mb-6 shadow-lg">
                   <Target className="h-10 w-10 text-purple-500" />
@@ -789,122 +835,172 @@ export function AdvancedCharts() {
               </div>
             ) : (
               <div className="space-y-6">
-                {/* Polygon Chart */}
-                <div className="h-[500px] bg-gradient-to-br from-purple-50/30 to-indigo-50/30 dark:from-purple-950/20 dark:to-indigo-950/20 rounded-xl p-6 flex items-center justify-center">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <RadarChart data={subjectAnalysisData} margin={{ top: 60, right: 80, bottom: 60, left: 80 }}>
-                      <defs>
-                        <linearGradient id="correctGlow" x1="0" y1="0" x2="1" y2="1">
-                          <stop offset="0%" stopColor="#22c55e" stopOpacity={0.4}/>
-                          <stop offset="100%" stopColor="#16a34a" stopOpacity={0.1}/>
-                        </linearGradient>
-                        <linearGradient id="wrongGlow" x1="0" y1="0" x2="1" y2="1">
-                          <stop offset="0%" stopColor="#ef4444" stopOpacity={0.4}/>
-                          <stop offset="100%" stopColor="#dc2626" stopOpacity={0.1}/>
-                        </linearGradient>
-                      </defs>
-                      <PolarGrid 
-                        stroke="currentColor" 
-                        className="opacity-25" 
-                        strokeWidth={1.5}
-                        radialLines={true}
-                      />
-                      <PolarAngleAxis 
-                        dataKey="subject" 
-                        tick={{ fontSize: 14, fontWeight: 700, fill: 'currentColor' }}
-                        className="text-foreground"
-                        radius={120}
-                      />
-                      <PolarRadiusAxis 
-                        angle={90} 
-                        domain={[0, 100]} 
-                        tick={{ fontSize: 11, fontWeight: 600 }}
-                        className="text-muted-foreground"
-                        tickCount={6}
-                        tickFormatter={(value) => `${value}%`}
-                      />
-                      <Radar
-                        name="✅ Doğru Cevaplar"
-                        dataKey="correctRate"
-                        stroke="#22c55e"
-                        fill="url(#correctGlow)"
-                        strokeWidth={4}
-                        dot={{ fill: '#22c55e', strokeWidth: 3, r: 8, stroke: '#ffffff' }}
-                        activeDot={{ r: 10, stroke: '#22c55e', strokeWidth: 4, fill: '#ffffff' }}
-                      />
-                      <Radar
-                        name="❌ Yanlış Cevaplar"
-                        dataKey="wrongRate"
-                        stroke="#ef4444"
-                        fill="url(#wrongGlow)"
-                        strokeWidth={4}
-                        dot={{ fill: '#ef4444', strokeWidth: 3, r: 8, stroke: '#ffffff' }}
-                        activeDot={{ r: 10, stroke: '#ef4444', strokeWidth: 4, fill: '#ffffff' }}
-                      />
-                      <Tooltip 
-                        contentStyle={{ 
-                          backgroundColor: 'hsl(var(--card))',
-                          border: '1px solid hsl(var(--border))',
-                          borderRadius: '12px',
-                          fontSize: '13px',
-                          boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
-                          padding: '12px'
-                        }}
-                        formatter={(value: any, name: any) => [
-                          `${typeof value === 'number' ? value.toFixed(1) : value}%`,
-                          name === 'correctRate' ? '✅ Doğru Oranı' : '❌ Yanlış Oranı'
-                        ]}
-                      />
-                      <Legend 
-                        wrapperStyle={{ paddingTop: '20px' }}
-                        iconType="circle"
-                        formatter={(value) => value === 'Doğru Cevaplar' ? '✅ Doğru Cevaplar' : '❌ Yanlış Cevaplar'}
-                      />
-                    </RadarChart>
-                  </ResponsiveContainer>
+                {/* Twin Radar Charts - TYT and AYT side by side */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* TYT Chart */}
+                  <div className="h-[400px] bg-gradient-to-br from-blue-50/30 to-indigo-50/30 dark:from-blue-950/20 dark:to-indigo-950/20 rounded-xl p-4">
+                    <h3 className="text-lg font-bold text-center mb-4 text-blue-700 dark:text-blue-300">🔵 TYT Ders Analizi</h3>
+                    {tytSubjectAnalysisData.length > 0 ? (
+                      <ResponsiveContainer width="100%" height="85%">
+                        <RadarChart data={tytSubjectAnalysisData} margin={{ top: 20, right: 30, bottom: 20, left: 30 }}>
+                          <defs>
+                            <linearGradient id="tytCorrectGlow" x1="0" y1="0" x2="1" y2="1">
+                              <stop offset="0%" stopColor="#22c55e" stopOpacity={0.4}/>
+                              <stop offset="100%" stopColor="#16a34a" stopOpacity={0.1}/>
+                            </linearGradient>
+                            <linearGradient id="tytWrongGlow" x1="0" y1="0" x2="1" y2="1">
+                              <stop offset="0%" stopColor="#ef4444" stopOpacity={0.4}/>
+                              <stop offset="100%" stopColor="#dc2626" stopOpacity={0.1}/>
+                            </linearGradient>
+                          </defs>
+                          <PolarGrid stroke="currentColor" className="opacity-25" strokeWidth={1} />
+                          <PolarAngleAxis dataKey="subject" tick={{ fontSize: 12, fontWeight: 600 }} />
+                          <PolarRadiusAxis angle={0} domain={[0, 'dataMax']} tick={{ fontSize: 10 }} />
+                          <Tooltip content={({ active, payload, label }) => {
+                            if (active && payload && payload.length) {
+                              return (
+                                <div className="bg-white/95 dark:bg-gray-800/95 p-3 rounded-lg shadow-lg border">
+                                  <p className="font-semibold mb-1">{label}</p>
+                                  {payload.map((entry, index) => (
+                                    <div key={index} className="flex items-center gap-2 text-sm">
+                                      <div className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color }}></div>
+                                      <span>{entry.name === '✅ Doğru Cevaplar' ? '✅' : '❌'} {entry.name}: {entry.value}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              );
+                            }
+                            return null;
+                          }} />
+                          <Radar name="✅ Doğru Cevaplar" dataKey="correct" stroke="#22c55e" strokeWidth={2} fill="url(#tytCorrectGlow)" fillOpacity={0.3} dot={{ r: 4, fill: '#22c55e' }} />
+                          <Radar name="❌ Yanlış Cevaplar" dataKey="wrong" stroke="#ef4444" strokeWidth={2} fill="url(#tytWrongGlow)" fillOpacity={0.3} dot={{ r: 4, fill: '#ef4444' }} />
+                          <Legend wrapperStyle={{ paddingTop: '10px', fontSize: '12px' }} iconType="circle" />
+                        </RadarChart>
+                      </ResponsiveContainer>
+                    ) : (
+                      <div className="flex items-center justify-center h-full text-center">
+                        <div>
+                          <div className="text-4xl mb-2">📊</div>
+                          <p className="text-sm text-muted-foreground">Henüz TYT deneme verisi yok</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* AYT Chart */}
+                  <div className="h-[400px] bg-gradient-to-br from-green-50/30 to-emerald-50/30 dark:from-green-950/20 dark:to-emerald-950/20 rounded-xl p-4">
+                    <h3 className="text-lg font-bold text-center mb-4 text-green-700 dark:text-green-300">🟢 AYT Ders Analizi</h3>
+                    {aytSubjectAnalysisData.length > 0 ? (
+                      <ResponsiveContainer width="100%" height="85%">
+                        <RadarChart data={aytSubjectAnalysisData} margin={{ top: 20, right: 30, bottom: 20, left: 30 }}>
+                          <defs>
+                            <linearGradient id="aytCorrectGlow" x1="0" y1="0" x2="1" y2="1">
+                              <stop offset="0%" stopColor="#22c55e" stopOpacity={0.4}/>
+                              <stop offset="100%" stopColor="#16a34a" stopOpacity={0.1}/>
+                            </linearGradient>
+                            <linearGradient id="aytWrongGlow" x1="0" y1="0" x2="1" y2="1">
+                              <stop offset="0%" stopColor="#ef4444" stopOpacity={0.4}/>
+                              <stop offset="100%" stopColor="#dc2626" stopOpacity={0.1}/>
+                            </linearGradient>
+                          </defs>
+                          <PolarGrid stroke="currentColor" className="opacity-25" strokeWidth={1} />
+                          <PolarAngleAxis dataKey="subject" tick={{ fontSize: 12, fontWeight: 600 }} />
+                          <PolarRadiusAxis angle={0} domain={[0, 'dataMax']} tick={{ fontSize: 10 }} />
+                          <Tooltip content={({ active, payload, label }) => {
+                            if (active && payload && payload.length) {
+                              return (
+                                <div className="bg-white/95 dark:bg-gray-800/95 p-3 rounded-lg shadow-lg border">
+                                  <p className="font-semibold mb-1">{label}</p>
+                                  {payload.map((entry, index) => (
+                                    <div key={index} className="flex items-center gap-2 text-sm">
+                                      <div className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color }}></div>
+                                      <span>{entry.name === '✅ Doğru Cevaplar' ? '✅' : '❌'} {entry.name}: {entry.value}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              );
+                            }
+                            return null;
+                          }} />
+                          <Radar name="✅ Doğru Cevaplar" dataKey="correct" stroke="#22c55e" strokeWidth={2} fill="url(#aytCorrectGlow)" fillOpacity={0.3} dot={{ r: 4, fill: '#22c55e' }} />
+                          <Radar name="❌ Yanlış Cevaplar" dataKey="wrong" stroke="#ef4444" strokeWidth={2} fill="url(#aytWrongGlow)" fillOpacity={0.3} dot={{ r: 4, fill: '#ef4444' }} />
+                          <Legend wrapperStyle={{ paddingTop: '10px', fontSize: '12px' }} iconType="circle" />
+                        </RadarChart>
+                      </ResponsiveContainer>
+                    ) : (
+                      <div className="flex items-center justify-center h-full text-center">
+                        <div>
+                          <div className="text-4xl mb-2">📊</div>
+                          <p className="text-sm text-muted-foreground">Henüz AYT deneme verisi yok</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
                 
-                {/* Summary Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                  {subjectAnalysisData.map((subject, index) => (
-                    <div key={index} className="bg-white/60 dark:bg-gray-900/60 rounded-xl p-4 border border-indigo-200/40 dark:border-indigo-700/40 hover:shadow-lg transition-all duration-200">
-                      <div className="flex items-center justify-between mb-3">
-                        <h4 className="font-semibold text-gray-800 dark:text-gray-200">{subject.subject}</h4>
-                        <div className="w-4 h-4 rounded-full" style={{ backgroundColor: subject.color }}></div>
-                      </div>
-                      
-                      <div className="space-y-2 mb-4">
-                        <div className="flex justify-between items-center">
-                          <span className="text-xs text-green-600 dark:text-green-400">✓ Doğru</span>
-                          <span className="text-sm font-semibold text-green-600 dark:text-green-400">{subject.correct}</span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <span className="text-xs text-red-600 dark:text-red-400">✗ Yanlış</span>
-                          <span className="text-sm font-semibold text-red-600 dark:text-red-400">{subject.wrong}</span>
-                        </div>
-                        <div className="flex justify-between items-center border-t pt-2">
-                          <span className="text-xs font-medium text-gray-600 dark:text-gray-400">Net</span>
-                          <span className="text-sm font-bold" style={{ color: subject.color }}>{subject.netScore.toFixed(1)}</span>
-                        </div>
-                      </div>
-                      
-                      {/* Progress bars */}
-                      <div className="space-y-2">
-                        <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                          <div 
-                            className="bg-green-500 h-2 rounded-full transition-all duration-500" 
-                            style={{ width: `${subject.correctRate}%` }}
-                          />
-                        </div>
-                        <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                          <div 
-                            className="bg-red-500 h-2 rounded-full transition-all duration-500" 
-                            style={{ width: `${subject.wrongRate}%` }}
-                          />
-                        </div>
+                {/* Combined Summary Cards for both TYT and AYT */}
+                <div className="space-y-4">
+                  {/* TYT Summary Cards */}
+                  {tytSubjectAnalysisData.length > 0 && (
+                    <div>
+                      <h4 className="text-lg font-semibold mb-3 text-blue-700 dark:text-blue-300">🔵 TYT Ders Özeti</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                        {tytSubjectAnalysisData.map((subject, index) => (
+                          <div key={index} className="bg-blue-50/60 dark:bg-blue-900/20 rounded-xl p-4 border border-blue-200/40 dark:border-blue-700/40 hover:shadow-lg transition-all duration-200">
+                            <div className="flex items-center justify-between mb-3">
+                              <h4 className="font-semibold text-gray-800 dark:text-gray-200">{subject.subject}</h4>
+                              <div className="w-4 h-4 rounded-full" style={{ backgroundColor: subject.color }}></div>
+                            </div>
+                            <div className="space-y-2 mb-4">
+                              <div className="flex justify-between items-center">
+                                <span className="text-xs text-green-600 dark:text-green-400">✓ Doğru</span>
+                                <span className="text-sm font-semibold text-green-600 dark:text-green-400">{subject.correct}</span>
+                              </div>
+                              <div className="flex justify-between items-center">
+                                <span className="text-xs text-red-600 dark:text-red-400">✗ Yanlış</span>
+                                <span className="text-sm font-semibold text-red-600 dark:text-red-400">{subject.wrong}</span>
+                              </div>
+                              <div className="flex justify-between items-center border-t pt-2">
+                                <span className="text-xs font-medium text-gray-600 dark:text-gray-400">Net</span>
+                                <span className="text-sm font-bold" style={{ color: subject.color }}>{subject.netScore.toFixed(1)}</span>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
                       </div>
                     </div>
-                  ))}
+                  )}
+                  
+                  {/* AYT Summary Cards */}
+                  {aytSubjectAnalysisData.length > 0 && (
+                    <div>
+                      <h4 className="text-lg font-semibold mb-3 text-green-700 dark:text-green-300">🟢 AYT Ders Özeti</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                        {aytSubjectAnalysisData.map((subject, index) => (
+                          <div key={index} className="bg-green-50/60 dark:bg-green-900/20 rounded-xl p-4 border border-green-200/40 dark:border-green-700/40 hover:shadow-lg transition-all duration-200">
+                            <div className="flex items-center justify-between mb-3">
+                              <h4 className="font-semibold text-gray-800 dark:text-gray-200">{subject.subject}</h4>
+                              <div className="w-4 h-4 rounded-full" style={{ backgroundColor: subject.color }}></div>
+                            </div>
+                            <div className="space-y-2 mb-4">
+                              <div className="flex justify-between items-center">
+                                <span className="text-xs text-green-600 dark:text-green-400">✓ Doğru</span>
+                                <span className="text-sm font-semibold text-green-600 dark:text-green-400">{subject.correct}</span>
+                              </div>
+                              <div className="flex justify-between items-center">
+                                <span className="text-xs text-red-600 dark:text-red-400">✗ Yanlış</span>
+                                <span className="text-sm font-semibold text-red-600 dark:text-red-400">{subject.wrong}</span>
+                              </div>
+                              <div className="flex justify-between items-center border-t pt-2">
+                                <span className="text-xs font-medium text-gray-600 dark:text-gray-400">Net</span>
+                                <span className="text-sm font-bold" style={{ color: subject.color }}>{subject.netScore.toFixed(1)}</span>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             )
@@ -914,3 +1010,6 @@ export function AdvancedCharts() {
     </div>
   );
 }
+
+// Export the component wrapped with React.memo for performance optimization
+export const AdvancedCharts = memo(AdvancedChartsComponent);

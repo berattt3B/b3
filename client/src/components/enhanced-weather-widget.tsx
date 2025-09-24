@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { getQueryOptions } from "@/lib/queryClient";
 import { Droplets, Wind, Eye, Thermometer, Sun, Moon, Activity, Shirt, Plane, Car, Heart, Dumbbell, CloudRain, Gauge, Sunrise, Sunset, Clock, ArrowUp, ArrowDown, Calendar, TrendingUp, TrendingDown } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -146,8 +147,9 @@ export function EnhancedWeatherWidget() {
       if (!response.ok) throw new Error('Failed to fetch weather data');
       return response.json();
     },
+    // Use optimized query options
+    ...getQueryOptions("/api/weather"),
     refetchInterval: 10 * 60 * 1000, // Refetch every 10 minutes
-    staleTime: 5 * 60 * 1000, // Consider data stale after 5 minutes
   });
 
   if (isLoading) {

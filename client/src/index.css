@@ -2,28 +2,65 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Breathing animation for current day in heatmap */
+/* GPU-accelerated breathing animation for current day in heatmap */
 @keyframes breathingPulse {
   0%, 100% {
-    transform: scale(1);
+    transform: scale3d(1, 1, 1);
     opacity: 0.9;
   }
   50% {
-    transform: scale(1.05);
+    transform: scale3d(1.05, 1.05, 1);
     opacity: 1;
   }
 }
 
-/* Custom breathing animation for current day in heatmap */
+/* GPU-accelerated custom breathing animation for current day in heatmap */
 @keyframes breathing {
   0%, 100% {
-    transform: scale(1);
+    transform: scale3d(1, 1, 1);
     opacity: 0.8;
   }
   50% {
-    transform: scale(1.1);
+    transform: scale3d(1.1, 1.1, 1);
     opacity: 1;
   }
+}
+
+/* Performance optimizations for animations */
+.animate-breathing-pulse {
+  will-change: transform, opacity;
+  transform: translateZ(0); /* Force GPU layer */
+}
+
+.animate-breathing {
+  will-change: transform, opacity;
+  transform: translateZ(0); /* Force GPU layer */
+}
+
+/* Optimized hover effects */
+.hover-scale {
+  will-change: transform;
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.hover-scale:hover {
+  transform: scale3d(1.05, 1.05, 1);
+}
+
+/* Optimized button transitions */
+.btn-optimized {
+  will-change: transform, box-shadow;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transform: translateZ(0);
+}
+
+.btn-optimized:hover {
+  transform: translateY(-1px) translateZ(0);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.btn-optimized:active {
+  transform: translateY(0) translateZ(0);
 }
 
 :root {
