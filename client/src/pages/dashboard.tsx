@@ -254,9 +254,8 @@ export default function Dashboard() {
     
     // Start from January 1st of current year
     const startDate = new Date(currentYear, 0, 1); // January 1st
-    // End at September 30th or today, whichever is earlier
-    const endDate = new Date(currentYear, 8, 30); // September 30th
-    const actualEndDate = today < endDate ? today : endDate;
+    // End at today (current date)
+    const actualEndDate = new Date(today); // Use today as end date
     
     // Generate data from January 1st to end date
     const currentDate = new Date(startDate);
@@ -295,39 +294,51 @@ export default function Dashboard() {
     return data;
   };
 
-  // Organize heatmap data into weeks for proper grid display
+  // Organize heatmap data into weeks for proper grid display (Monday to Sunday)
   const organizeHeatmapIntoWeeks = (data: any[]) => {
     const weeks = [];
-    let currentWeek = [];
     
-    // Find the first Monday to start the grid properly
-    let startIndex = 0;
-    while (startIndex < data.length && data[startIndex].dayOfWeek !== 1) {
-      startIndex++;
-    }
+    if (data.length === 0) return weeks;
     
-    // Process all days starting from first Monday
-    for (let i = startIndex; i < data.length; i++) {
-      const dayData = data[i];
-      currentWeek.push(dayData);
+    // Create a map for fast lookup by date
+    const dateMap = new Map();
+    data.forEach(day => {
+      dateMap.set(day.date, day);
+    });
+    
+    // Find the first date and calculate the Monday of that week
+    const firstDate = new Date(data[0].date);
+    const firstDayOfWeek = firstDate.getDay(); // 0 = Sunday, 1 = Monday, ...
+    const daysToMonday = firstDayOfWeek === 0 ? 6 : firstDayOfWeek - 1; // Calculate days back to Monday
+    
+    // Start from the Monday of the first week
+    const startDate = new Date(firstDate);
+    startDate.setDate(firstDate.getDate() - daysToMonday);
+    
+    // Find the last date and calculate the Sunday of that week
+    const lastDate = new Date(data[data.length - 1].date);
+    const lastDayOfWeek = lastDate.getDay();
+    const daysToSunday = lastDayOfWeek === 0 ? 0 : 7 - lastDayOfWeek; // Calculate days forward to Sunday
+    
+    const endDate = new Date(lastDate);
+    endDate.setDate(lastDate.getDate() + daysToSunday);
+    
+    // Generate weeks from start Monday to end Sunday
+    const currentDate = new Date(startDate);
+    
+    while (currentDate <= endDate) {
+      const week = [];
       
-      // If it's Sunday (day 0) or we have 7 days, start new week
-      if (dayData.dayOfWeek === 0 || currentWeek.length === 7) {
-        // Fill remaining days in week if needed
-        while (currentWeek.length < 7) {
-          currentWeek.push(null);
-        }
-        weeks.push([...currentWeek]);
-        currentWeek = [];
+      // Generate 7 days for this week (Monday to Sunday)
+      for (let i = 0; i < 7; i++) {
+        const dateStr = currentDate.toISOString().split('T')[0];
+        const dayData = dateMap.get(dateStr);
+        
+        week.push(dayData || null);
+        currentDate.setDate(currentDate.getDate() + 1);
       }
-    }
-    
-    // Add final incomplete week if any
-    if (currentWeek.length > 0) {
-      while (currentWeek.length < 7) {
-        currentWeek.push(null);
-      }
-      weeks.push(currentWeek);
+      
+      weeks.push(week);
     }
     
     return weeks;
