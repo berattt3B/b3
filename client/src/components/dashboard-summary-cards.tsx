@@ -290,14 +290,15 @@ export function DashboardSummaryCards() {
                 </div>
               </div>
               
-              {/* Separate Correct Answers Box */}
-              <div className="bg-white/50 dark:bg-gray-800/50 rounded-xl p-4 backdrop-blur-sm border border-green-200/30 dark:border-green-700/30">
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <div className="text-3xl font-black text-green-600 dark:text-green-400 mb-1" data-testid="text-total-correct">
+              {/* Side by Side Correct and Wrong Answers */}
+              <div className="grid grid-cols-2 gap-3">
+                {/* Correct Answers Box */}
+                <div className="bg-white/50 dark:bg-gray-800/50 rounded-lg p-4 backdrop-blur-sm border border-green-200/30 dark:border-green-700/30">
+                  <div className="text-center">
+                    <div className="text-2xl font-black text-green-600 dark:text-green-400 mb-2" data-testid="text-total-correct">
                       {questionStats.totalCorrect.toLocaleString('tr-TR')}
                     </div>
-                    <div className="text-sm font-medium text-green-700 dark:text-green-300">✅ Toplam Doğru</div>
+                    <div className="text-sm font-medium text-green-700 dark:text-green-300">Doğru</div>
                     <div className="w-full bg-green-100 dark:bg-green-900/30 rounded-full h-2 mt-2">
                       <div 
                         className="bg-gradient-to-r from-green-500 to-green-600 h-2 rounded-full transition-all duration-1000"
@@ -305,45 +306,21 @@ export function DashboardSummaryCards() {
                       ></div>
                     </div>
                   </div>
-                  <div className="ml-4 p-3 bg-green-100 dark:bg-green-900/30 rounded-xl">
-                    <span className="text-xs font-bold text-green-600 dark:text-green-400">✅</span>
-                  </div>
                 </div>
-              </div>
-              
-              {/* Separate Wrong Answers Box */}
-              <div className="bg-white/50 dark:bg-gray-800/50 rounded-xl p-4 backdrop-blur-sm border border-red-200/30 dark:border-red-700/30">
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <div className="text-3xl font-black text-red-600 dark:text-red-400 mb-1" data-testid="text-total-wrong">
+                
+                {/* Wrong Answers Box */}
+                <div className="bg-white/50 dark:bg-gray-800/50 rounded-lg p-4 backdrop-blur-sm border border-red-200/30 dark:border-red-700/30">
+                  <div className="text-center">
+                    <div className="text-2xl font-black text-red-600 dark:text-red-400 mb-2" data-testid="text-total-wrong">
                       {questionStats.totalWrong.toLocaleString('tr-TR')}
                     </div>
-                    <div className="text-sm font-medium text-red-700 dark:text-red-300">❌ Toplam Yanlış</div>
+                    <div className="text-sm font-medium text-red-700 dark:text-red-300">Yanlış</div>
                     <div className="w-full bg-red-100 dark:bg-red-900/30 rounded-full h-2 mt-2">
                       <div 
                         className="bg-gradient-to-r from-red-500 to-red-600 h-2 rounded-full transition-all duration-1000"
                         style={{ width: `${questionStats.totalQuestions > 0 ? (questionStats.totalWrong / questionStats.totalQuestions) * 100 : 0}%` }}
                       ></div>
                     </div>
-                  </div>
-                  <div className="ml-4 p-3 bg-red-100 dark:bg-red-900/30 rounded-xl">
-                    <span className="text-xs font-bold text-red-600 dark:text-red-400">❌</span>
-                  </div>
-                </div>
-              </div>
-              
-              {/* Success Rate Summary */}
-              <div className="bg-gradient-to-r from-emerald-50 to-cyan-50 dark:from-emerald-900/20 dark:to-cyan-900/20 rounded-xl p-4 border border-emerald-200/50 dark:border-emerald-700/30">
-                <div className="text-center">
-                  <div className="text-2xl font-black text-emerald-600 dark:text-emerald-400 mb-1">
-                    {(questionStats.totalQuestions - (questionLogs.reduce((total, log) => total + (Number(log.blank_count) || 0), 0))) > 0 ? ((questionStats.totalCorrect / (questionStats.totalQuestions - (questionLogs.reduce((total, log) => total + (Number(log.blank_count) || 0), 0)))) * 100).toFixed(1) : 0}%
-                  </div>
-                  <div className="text-sm font-medium text-emerald-700 dark:text-emerald-300">📈 Başarı Oranı</div>
-                  <div className="w-full bg-emerald-200 dark:bg-emerald-800/30 rounded-full h-2 mt-3">
-                    <div 
-                      className="bg-gradient-to-r from-emerald-500 to-cyan-600 h-2 rounded-full transition-all duration-1000"
-                      style={{ width: `${(questionStats.totalQuestions - (questionLogs.reduce((total, log) => total + (Number(log.blank_count) || 0), 0))) > 0 ? ((questionStats.totalCorrect / (questionStats.totalQuestions - (questionLogs.reduce((total, log) => total + (Number(log.blank_count) || 0), 0)))) * 100) : 0}%` }}
-                    ></div>
                   </div>
                 </div>
               </div>

@@ -525,21 +525,26 @@ export default function Dashboard() {
                           return (
                             <div
                               key={dayIndex}
-                              className={`w-5 h-5 rounded-md border transition-all duration-200 hover:scale-125 cursor-pointer ${
+                              className={`w-5 h-5 rounded-md border transition-all duration-200 hover:scale-110 cursor-pointer relative ${
                                 day.isToday 
-                                  ? 'border-2 border-purple-400 dark:border-purple-300 shadow-lg shadow-purple-300 dark:shadow-purple-800 animate-pulse' 
+                                  ? 'border-2 border-purple-400 dark:border-purple-300 shadow-lg shadow-purple-300 dark:shadow-purple-800' 
                                   : day.intensity === 0 
-                                    ? 'bg-gray-100 dark:bg-gray-800 border-gray-200 dark:border-gray-700' 
-                                    : 'border-purple-300 dark:border-purple-600'
-                              }`}
+                                    ? 'bg-gray-100 dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:bg-gray-200 dark:hover:bg-gray-700' 
+                                    : 'border-purple-300 dark:border-purple-600 hover:border-purple-400 dark:hover:border-purple-500'
+                              } ${day.isToday ? 'animate-pulse' : ''}`}
                               style={{
                                 backgroundColor: day.isToday 
                                   ? (day.intensity > 0 ? `rgba(147, 51, 234, 0.8)` : `rgba(147, 51, 234, 0.3)`)
-                                  : day.intensity > 0 ? `rgba(147, 51, 234, ${opacity})` : undefined
+                                  : day.intensity > 0 ? `rgba(147, 51, 234, ${opacity})` : undefined,
+                                animation: day.isToday ? 'breathing 2s ease-in-out infinite' : undefined
                               }}
                               title={`${day.date}${day.isToday ? ' (BUGÜN)' : ''}: ${day.count} aktivite (${day.questionCount} soru, ${day.taskCount} görev)`}
                               onClick={() => handleHeatmapDayClick(day)}
-                            />
+                            >
+                              {day.isToday && (
+                                <div className="absolute inset-0 rounded-md bg-white dark:bg-purple-300 opacity-40 animate-ping pointer-events-none"></div>
+                              )}
+                            </div>
                           );
                         })}
                       </div>
