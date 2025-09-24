@@ -1475,8 +1475,11 @@ export default function Dashboard() {
                     </div>
                   </div>
                   {parseInt(newExamResult.subjects.turkce.wrong) > 0 && (
-                    <div>
-                      <label className="block text-xs font-medium mb-1 text-red-600">Eksik konuları yazınız (virgülle ayırın)</label>
+                    <div className="bg-gradient-to-r from-red-50/70 to-orange-50/50 dark:from-red-900/20 dark:to-orange-900/15 rounded-xl p-4 border border-red-200/40 dark:border-red-700/30 mt-3">
+                      <div className="flex items-center gap-2 mb-3">
+                        <AlertTriangle className="h-4 w-4 text-red-500" />
+                        <label className="text-sm font-semibold text-red-700 dark:text-red-300">🔍 Türkçe Eksik Konular</label>
+                      </div>
                       <Input
                         value={currentWrongTopics.turkce || ""}
                         onChange={(e) => {
@@ -1490,8 +1493,14 @@ export default function Dashboard() {
                             }
                           });
                         }}
-                        placeholder="konu1, konu2, konu3"
+                        placeholder="konu1, konu2, konu3 şeklinde virgülle ayırarak yazın..."
+                        className="bg-white/80 dark:bg-gray-800/80 border-red-200 dark:border-red-700/50 focus:border-red-400 dark:focus:border-red-500 rounded-xl shadow-sm"
                       />
+                      {currentWrongTopics.turkce && (
+                        <div className="mt-2 text-xs text-red-600/70 dark:text-red-400/70">
+                          💡 Bu konular öncelik listesine eklenecek
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -1550,8 +1559,11 @@ export default function Dashboard() {
                     </div>
                   </div>
                   {parseInt(newExamResult.subjects.matematik.wrong) > 0 && (
-                    <div>
-                      <label className="block text-xs font-medium mb-1 text-red-600">Eksik konuları yazınız (virgülle ayırın)</label>
+                    <div className="bg-gradient-to-r from-blue-50/70 to-cyan-50/50 dark:from-blue-900/20 dark:to-cyan-900/15 rounded-xl p-4 border border-blue-200/40 dark:border-blue-700/30 mt-3">
+                      <div className="flex items-center gap-2 mb-3">
+                        <AlertTriangle className="h-4 w-4 text-blue-500" />
+                        <label className="text-sm font-semibold text-blue-700 dark:text-blue-300">🔍 Matematik Eksik Konular</label>
+                      </div>
                       <Input
                         value={currentWrongTopics.matematik || ""}
                         onChange={(e) => {
@@ -1565,8 +1577,14 @@ export default function Dashboard() {
                             }
                           });
                         }}
-                        placeholder="konu1, konu2, konu3"
+                        placeholder="konu1, konu2, konu3 şeklinde virgülle ayırarak yazın..."
+                        className="bg-white/80 dark:bg-gray-800/80 border-blue-200 dark:border-blue-700/50 focus:border-blue-400 dark:focus:border-blue-500 rounded-xl shadow-sm"
                       />
+                      {currentWrongTopics.matematik && (
+                        <div className="mt-2 text-xs text-blue-600/70 dark:text-blue-400/70">
+                          💡 Bu konular öncelik listesine eklenecek
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -1625,8 +1643,11 @@ export default function Dashboard() {
                     </div>
                   </div>
                   {parseInt(newExamResult.subjects.sosyal.wrong) > 0 && (
-                    <div>
-                      <label className="block text-xs font-medium mb-1 text-red-600">Eksik konuları yazınız (virgülle ayırın)</label>
+                    <div className="bg-gradient-to-r from-purple-50/70 to-violet-50/50 dark:from-purple-900/20 dark:to-violet-900/15 rounded-xl p-4 border border-purple-200/40 dark:border-purple-700/30 mt-3">
+                      <div className="flex items-center gap-2 mb-3">
+                        <AlertTriangle className="h-4 w-4 text-purple-500" />
+                        <label className="text-sm font-semibold text-purple-700 dark:text-purple-300">🔍 Sosyal Bilimler Eksik Konular</label>
+                      </div>
                       <Input
                         value={currentWrongTopics.sosyal || ""}
                         onChange={(e) => {
@@ -1640,8 +1661,14 @@ export default function Dashboard() {
                             }
                           });
                         }}
-                        placeholder="konu1, konu2, konu3"
+                        placeholder="konu1, konu2, konu3 şeklinde virgülle ayırarak yazın..."
+                        className="bg-white/80 dark:bg-gray-800/80 border-purple-200 dark:border-purple-700/50 focus:border-purple-400 dark:focus:border-purple-500 rounded-xl shadow-sm"
                       />
+                      {currentWrongTopics.sosyal && (
+                        <div className="mt-2 text-xs text-purple-600/70 dark:text-purple-400/70">
+                          💡 Bu konular öncelik listesine eklenecek
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -1700,8 +1727,11 @@ export default function Dashboard() {
                     </div>
                   </div>
                   {parseInt(newExamResult.subjects.fen.wrong) > 0 && (
-                    <div>
-                      <label className="block text-xs font-medium mb-1 text-red-600">Eksik konuları yazınız (virgülle ayırın)</label>
+                    <div className="bg-gradient-to-r from-orange-50/70 to-amber-50/50 dark:from-orange-900/20 dark:to-amber-900/15 rounded-xl p-4 border border-orange-200/40 dark:border-orange-700/30 mt-3">
+                      <div className="flex items-center gap-2 mb-3">
+                        <AlertTriangle className="h-4 w-4 text-orange-500" />
+                        <label className="text-sm font-semibold text-orange-700 dark:text-orange-300">🔍 Fen Bilimleri Eksik Konular</label>
+                      </div>
                       <Input
                         value={currentWrongTopics.fen || ""}
                         onChange={(e) => {
@@ -1715,8 +1745,14 @@ export default function Dashboard() {
                             }
                           });
                         }}
-                        placeholder="konu1, konu2, konu3"
+                        placeholder="konu1, konu2, konu3 şeklinde virgülle ayırarak yazın..."
+                        className="bg-white/80 dark:bg-gray-800/80 border-orange-200 dark:border-orange-700/50 focus:border-orange-400 dark:focus:border-orange-500 rounded-xl shadow-sm"
                       />
+                      {currentWrongTopics.fen && (
+                        <div className="mt-2 text-xs text-orange-600/70 dark:text-orange-400/70">
+                          💡 Bu konular öncelik listesine eklenecek
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -1857,8 +1893,11 @@ export default function Dashboard() {
                     </div>
                   </div>
                   {parseInt(newExamResult.subjects.fizik.wrong) > 0 && (
-                    <div>
-                      <label className="block text-xs font-medium mb-1 text-red-600">Eksik konuları yazınız (virgülle ayırın)</label>
+                    <div className="bg-gradient-to-r from-indigo-50/70 to-blue-50/50 dark:from-indigo-900/20 dark:to-blue-900/15 rounded-xl p-4 border border-indigo-200/40 dark:border-indigo-700/30 mt-3">
+                      <div className="flex items-center gap-2 mb-3">
+                        <AlertTriangle className="h-4 w-4 text-indigo-500" />
+                        <label className="text-sm font-semibold text-indigo-700 dark:text-indigo-300">🔍 Fizik Eksik Konular</label>
+                      </div>
                       <Input
                         value={currentWrongTopics.fizik || ""}
                         onChange={(e) => {
@@ -1872,8 +1911,14 @@ export default function Dashboard() {
                             }
                           });
                         }}
-                        placeholder="konu1, konu2, konu3"
+                        placeholder="konu1, konu2, konu3 şeklinde virgülle ayırarak yazın..."
+                        className="bg-white/80 dark:bg-gray-800/80 border-indigo-200 dark:border-indigo-700/50 focus:border-indigo-400 dark:focus:border-indigo-500 rounded-xl shadow-sm"
                       />
+                      {currentWrongTopics.fizik && (
+                        <div className="mt-2 text-xs text-indigo-600/70 dark:text-indigo-400/70">
+                          💡 Bu konular öncelik listesine eklenecek
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -1932,8 +1977,11 @@ export default function Dashboard() {
                     </div>
                   </div>
                   {parseInt(newExamResult.subjects.kimya.wrong) > 0 && (
-                    <div>
-                      <label className="block text-xs font-medium mb-1 text-red-600">Eksik konuları yazınız (virgülle ayırın)</label>
+                    <div className="bg-gradient-to-r from-green-50/70 to-emerald-50/50 dark:from-green-900/20 dark:to-emerald-900/15 rounded-xl p-4 border border-green-200/40 dark:border-green-700/30 mt-3">
+                      <div className="flex items-center gap-2 mb-3">
+                        <AlertTriangle className="h-4 w-4 text-green-500" />
+                        <label className="text-sm font-semibold text-green-700 dark:text-green-300">🔍 Kimya Eksik Konular</label>
+                      </div>
                       <Input
                         value={currentWrongTopics.kimya || ""}
                         onChange={(e) => {
@@ -1947,8 +1995,14 @@ export default function Dashboard() {
                             }
                           });
                         }}
-                        placeholder="konu1, konu2, konu3"
+                        placeholder="konu1, konu2, konu3 şeklinde virgülle ayırarak yazın..."
+                        className="bg-white/80 dark:bg-gray-800/80 border-green-200 dark:border-green-700/50 focus:border-green-400 dark:focus:border-green-500 rounded-xl shadow-sm"
                       />
+                      {currentWrongTopics.kimya && (
+                        <div className="mt-2 text-xs text-green-600/70 dark:text-green-400/70">
+                          💡 Bu konular öncelik listesine eklenecek
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -2007,8 +2061,11 @@ export default function Dashboard() {
                     </div>
                   </div>
                   {parseInt(newExamResult.subjects.biyoloji.wrong) > 0 && (
-                    <div>
-                      <label className="block text-xs font-medium mb-1 text-red-600">Eksik konuları yazınız (virgülle ayırın)</label>
+                    <div className="bg-gradient-to-r from-teal-50/70 to-cyan-50/50 dark:from-teal-900/20 dark:to-cyan-900/15 rounded-xl p-4 border border-teal-200/40 dark:border-teal-700/30 mt-3">
+                      <div className="flex items-center gap-2 mb-3">
+                        <AlertTriangle className="h-4 w-4 text-teal-500" />
+                        <label className="text-sm font-semibold text-teal-700 dark:text-teal-300">🔍 Biyoloji Eksik Konular</label>
+                      </div>
                       <Input
                         value={currentWrongTopics.biyoloji || ""}
                         onChange={(e) => {
@@ -2022,8 +2079,14 @@ export default function Dashboard() {
                             }
                           });
                         }}
-                        placeholder="konu1, konu2, konu3"
+                        placeholder="konu1, konu2, konu3 şeklinde virgülle ayırarak yazın..."
+                        className="bg-white/80 dark:bg-gray-800/80 border-teal-200 dark:border-teal-700/50 focus:border-teal-400 dark:focus:border-teal-500 rounded-xl shadow-sm"
                       />
+                      {currentWrongTopics.biyoloji && (
+                        <div className="mt-2 text-xs text-teal-600/70 dark:text-teal-400/70">
+                          💡 Bu konular öncelik listesine eklenecek
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
