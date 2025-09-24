@@ -561,65 +561,95 @@ export function AdvancedCharts() {
         </div>
       </div>
 
-      {/* Second Row - Net Progress and Subject Distribution */}
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-        {/* Line Chart - Net Progression */}
-        <div className="bg-card rounded-xl border border-border p-6 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-500/5 to-green-500/5 rounded-full blur-3xl"></div>
+      {/* Enhanced Second Row - Net Progress and Subject Distribution */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+        {/* Enhanced Net Progress Chart */}
+        <div className="bg-gradient-to-br from-green-50/60 via-card to-teal-50/40 dark:from-green-950/30 dark:via-card dark:to-teal-950/25 rounded-2xl border-2 border-green-200/40 dark:border-green-800/40 p-8 relative overflow-hidden shadow-2xl backdrop-blur-sm">
+          <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-green-500/10 to-teal-500/10 rounded-full blur-3xl animate-pulse"></div>
+          <div className="absolute -bottom-8 -left-8 w-32 h-32 bg-gradient-to-tr from-teal-500/10 to-green-500/10 rounded-full blur-2xl"></div>
           <div className="relative">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center">
-                <TrendingUp className="h-5 w-5 mr-2 text-blue-600" />
-                <h3 className="text-lg font-semibold text-foreground">Net Gelişim Grafiği</h3>
+            <div className="flex items-center justify-between mb-8">
+              <div className="flex items-center space-x-3">
+                <div className="p-3 bg-gradient-to-br from-green-500 via-teal-500 to-green-600 rounded-xl shadow-lg">
+                  <TrendingUp className="h-6 w-6 text-white drop-shadow-lg" />
+                </div>
+                <div>
+                  <h3 className="text-2xl font-bold bg-gradient-to-r from-green-600 via-teal-600 to-green-700 bg-clip-text text-transparent">
+                    📈 Net Gelişim Grafiği
+                  </h3>
+                  <p className="text-sm text-green-600/70 dark:text-green-400/70 font-medium">
+                    Deneme performans ilerlemesi
+                  </p>
+                </div>
               </div>
-              <div className="text-xs text-muted-foreground">
+              <div className="text-xs text-muted-foreground bg-green-100/60 dark:bg-green-900/30 px-4 py-2 rounded-full border border-green-200/50 dark:border-green-700/50">
                 Son {lineChartData.length} deneme
               </div>
             </div>
             
             {lineChartData.length === 0 ? (
-              <div className="text-center py-16 text-muted-foreground">
-                <Activity className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p className="text-sm">Yeterli deneme verisi bulunmuyor</p>
-                <p className="text-xs mt-1">En az 2 deneme kaydı gerekli</p>
+              <div className="text-center py-20 text-muted-foreground">
+                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-green-100 to-teal-100 dark:from-green-900/30 dark:to-teal-900/30 flex items-center justify-center mx-auto mb-6 shadow-lg">
+                  <Activity className="h-10 w-10 text-green-500" />
+                </div>
+                <h4 className="text-lg font-semibold text-green-700 dark:text-green-300 mb-2">Yeterli deneme verisi bulunmuyor</h4>
+                <p className="text-sm opacity-75 mb-4">En az 2 deneme kaydı gerekli</p>
+                <div className="flex justify-center space-x-1">
+                  <div className="w-2 h-2 rounded-full bg-green-500 animate-bounce"></div>
+                  <div className="w-2 h-2 rounded-full bg-teal-500 animate-bounce delay-100"></div>
+                  <div className="w-2 h-2 rounded-full bg-green-600 animate-bounce delay-200"></div>
+                </div>
               </div>
             ) : (
               <div className="h-80">
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={lineChartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+                  <LineChart data={lineChartData} margin={{ top: 20, right: 30, left: 10, bottom: 10 }}>
+                    <CartesianGrid strokeDasharray="3 3" className="opacity-30" stroke="currentColor" />
                     <XAxis 
                       dataKey="date" 
                       className="text-xs text-muted-foreground"
-                      tick={{ fontSize: 12 }}
+                      tick={{ fontSize: 11, fontWeight: 500 }}
                       stroke="currentColor"
+                      axisLine={{ stroke: 'currentColor', strokeWidth: 1 }}
                     />
                     <YAxis 
                       className="text-xs text-muted-foreground"
-                      tick={{ fontSize: 12 }}
+                      tick={{ fontSize: 11, fontWeight: 500 }}
                       stroke="currentColor"
+                      axisLine={{ stroke: 'currentColor', strokeWidth: 1 }}
+                      label={{ value: 'Net Sayısı', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle' } }}
                     />
                     <Tooltip 
                       contentStyle={{ 
                         backgroundColor: 'hsl(var(--card))',
                         border: '1px solid hsl(var(--border))',
-                        borderRadius: '8px',
-                        fontSize: '12px'
+                        borderRadius: '12px',
+                        fontSize: '13px',
+                        boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
+                        padding: '12px'
                       }}
                       labelFormatter={(label, payload) => {
                         const data = payload?.[0]?.payload;
-                        return data ? data.examName : label;
+                        return data ? `📊 ${data.examName}` : label;
                       }}
+                      formatter={(value: any, name: any) => [
+                        `${value} net`,
+                        name === 'TYT' ? '🎯 TYT Net' : name === 'AYT' ? '🎯 AYT Net' : 
+                        name === 'TYTTarget' ? '📍 TYT Hedef' : '📍 AYT Hedef'
+                      ]}
                     />
-                    <Legend />
+                    <Legend 
+                      wrapperStyle={{ paddingTop: '20px' }}
+                      iconType="line"
+                    />
                     
-                    {/* Target lines */}
+                    {/* Enhanced Target lines */}
                     <Line 
                       type="monotone" 
                       dataKey="TYTTarget" 
                       stroke="#3b82f6" 
-                      strokeDasharray="5 5" 
-                      strokeWidth={1}
+                      strokeDasharray="8 4" 
+                      strokeWidth={2}
                       dot={false} 
                       connectNulls={false}
                       name="TYT Hedef (80)"
@@ -628,32 +658,46 @@ export function AdvancedCharts() {
                       type="monotone" 
                       dataKey="AYTTarget" 
                       stroke="#10b981" 
-                      strokeDasharray="5 5" 
-                      strokeWidth={1}
+                      strokeDasharray="8 4" 
+                      strokeWidth={2}
                       dot={false} 
                       connectNulls={false}
                       name="AYT Hedef (40)"
                     />
                     
-                    {/* Actual performance lines */}
+                    {/* Enhanced Actual performance lines */}
                     <Line 
                       type="monotone" 
                       dataKey="TYT" 
-                      stroke="#1e40af" 
-                      strokeWidth={3}
-                      dot={{ fill: '#1e40af', strokeWidth: 2, r: 4 }} 
+                      stroke="url(#tytGradient)" 
+                      strokeWidth={4}
+                      dot={{ fill: '#1e40af', strokeWidth: 3, r: 6, stroke: '#ffffff' }} 
+                      activeDot={{ r: 8, stroke: '#1e40af', strokeWidth: 3, fill: '#ffffff' }}
                       connectNulls={false}
                       name="TYT Net"
                     />
                     <Line 
                       type="monotone" 
                       dataKey="AYT" 
-                      stroke="#059669" 
-                      strokeWidth={3}
-                      dot={{ fill: '#059669', strokeWidth: 2, r: 4 }} 
+                      stroke="url(#aytGradient)" 
+                      strokeWidth={4}
+                      dot={{ fill: '#059669', strokeWidth: 3, r: 6, stroke: '#ffffff' }} 
+                      activeDot={{ r: 8, stroke: '#059669', strokeWidth: 3, fill: '#ffffff' }}
                       connectNulls={false}
                       name="AYT Net"
                     />
+                    
+                    {/* Gradient Definitions */}
+                    <defs>
+                      <linearGradient id="tytGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" stopColor="#3b82f6" />
+                        <stop offset="100%" stopColor="#1e40af" />
+                      </linearGradient>
+                      <linearGradient id="aytGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" stopColor="#10b981" />
+                        <stop offset="100%" stopColor="#059669" />
+                      </linearGradient>
+                    </defs>
                   </LineChart>
                 </ResponsiveContainer>
               </div>
@@ -661,64 +705,110 @@ export function AdvancedCharts() {
           </div>
         </div>
 
-        {/* Radar Chart - Subject Distribution */}
-        <div className="bg-card rounded-xl border border-border p-6 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-purple-500/5 to-orange-500/5 rounded-full blur-3xl"></div>
+        {/* Enhanced Subject Distribution Radar Chart */}
+        <div className="bg-gradient-to-br from-purple-50/60 via-card to-indigo-50/40 dark:from-purple-950/30 dark:via-card dark:to-indigo-950/25 rounded-2xl border-2 border-purple-200/40 dark:border-purple-800/40 p-8 relative overflow-hidden shadow-2xl backdrop-blur-sm">
+          <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-purple-500/10 to-indigo-500/10 rounded-full blur-3xl animate-pulse"></div>
+          <div className="absolute -bottom-8 -left-8 w-32 h-32 bg-gradient-to-tr from-indigo-500/10 to-purple-500/10 rounded-full blur-2xl"></div>
           <div className="relative">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center">
-                <Target className="h-5 w-5 mr-2 text-purple-600" />
-                <h3 className="text-lg font-semibold text-foreground">Ders Net Dağılımı</h3>
+            <div className="flex items-center justify-between mb-8">
+              <div className="flex items-center space-x-3">
+                <div className="p-3 bg-gradient-to-br from-purple-500 via-indigo-500 to-purple-600 rounded-xl shadow-lg">
+                  <Target className="h-6 w-6 text-white drop-shadow-lg" />
+                </div>
+                <div>
+                  <h3 className="text-2xl font-bold bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-700 bg-clip-text text-transparent">
+                    🎯 Ders Net Dağılımı
+                  </h3>
+                  <p className="text-sm text-purple-600/70 dark:text-purple-400/70 font-medium">
+                    Ders bazında performans analizi
+                  </p>
+                </div>
               </div>
-              <div className="text-xs text-muted-foreground">
+              <div className="text-xs text-muted-foreground bg-purple-100/60 dark:bg-purple-900/30 px-4 py-2 rounded-full border border-purple-200/50 dark:border-purple-700/50">
                 {examResults.length > 0 && radarChartData.length > 0 ? 'Son deneme' : 'Veri yok'}
               </div>
             </div>
             
             {radarChartData.length === 0 ? (
-              <div className="text-center py-16 text-muted-foreground">
-                <Target className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p className="text-sm">Ders net verisi bulunmuyor</p>
-                <p className="text-xs mt-1">Deneme ekleyip ders netlerini girin</p>
+              <div className="text-center py-20 text-muted-foreground">
+                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-purple-100 to-indigo-100 dark:from-purple-900/30 dark:to-indigo-900/30 flex items-center justify-center mx-auto mb-6 shadow-lg">
+                  <Target className="h-10 w-10 text-purple-500" />
+                </div>
+                <h4 className="text-lg font-semibold text-purple-700 dark:text-purple-300 mb-2">Ders net verisi bulunmuyor</h4>
+                <p className="text-sm opacity-75 mb-4">Deneme ekleyip ders netlerini girin</p>
+                <div className="flex justify-center space-x-1">
+                  <div className="w-2 h-2 rounded-full bg-purple-500 animate-bounce"></div>
+                  <div className="w-2 h-2 rounded-full bg-indigo-500 animate-bounce delay-100"></div>
+                  <div className="w-2 h-2 rounded-full bg-purple-600 animate-bounce delay-200"></div>
+                </div>
               </div>
             ) : (
               <div className="h-80">
                 <ResponsiveContainer width="100%" height="100%">
                   <RadarChart data={radarChartData} margin={{ top: 40, right: 40, bottom: 40, left: 40 }}>
-                    <PolarGrid className="opacity-30" />
+                    <PolarGrid 
+                      className="opacity-30" 
+                      stroke="currentColor"
+                      strokeWidth={1}
+                      fill="transparent"
+                    />
                     <PolarAngleAxis 
                       dataKey="subject" 
                       className="text-xs text-foreground"
-                      tick={{ fontSize: 11, fontWeight: 500 }}
+                      tick={{ fontSize: 12, fontWeight: 600, fill: 'currentColor' }}
+                      tickFormatter={(value) => value.length > 8 ? `${value.substring(0, 8)}...` : value}
                     />
                     <PolarRadiusAxis 
                       angle={90} 
                       domain={[0, 100]}
                       className="text-xs text-muted-foreground"
-                      tick={{ fontSize: 10 }}
-                      tickCount={5}
+                      tick={{ fontSize: 10, fill: 'currentColor' }}
+                      tickCount={6}
+                      stroke="currentColor"
+                      strokeWidth={1}
                     />
                     <Tooltip
                       contentStyle={{
                         backgroundColor: 'hsl(var(--card))',
                         border: '1px solid hsl(var(--border))',
-                        borderRadius: '8px',
-                        fontSize: '12px'
+                        borderRadius: '12px',
+                        fontSize: '13px',
+                        boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
+                        padding: '12px'
                       }}
-                      formatter={(value, name) => [
-                        `${value}${name === 'percentage' ? '%' : ' net'}`,
-                        name === 'percentage' ? 'Başarı Oranı' : 'Net Sayısı'
+                      formatter={(value: any, name: any) => [
+                        `%${typeof value === 'number' ? value.toFixed(1) : value}`,
+                        '📊 Başarı Oranı'
                       ]}
+                      labelFormatter={(label) => `📚 ${label}`}
                     />
                     <Radar
                       name="percentage"
                       dataKey="percentage"
-                      stroke="#8b5cf6"
-                      fill="rgba(139, 92, 246, 0.1)"
-                      fillOpacity={0.3}
-                      strokeWidth={2}
-                      dot={{ fill: "#8b5cf6", strokeWidth: 1, r: 4 }}
+                      stroke="url(#radarGradient)"
+                      fill="url(#radarFillGradient)"
+                      fillOpacity={0.2}
+                      strokeWidth={3}
+                      dot={{ fill: "url(#radarDotGradient)", strokeWidth: 2, r: 5, stroke: '#ffffff' }}
+                      activeDot={{ r: 7, stroke: '#8b5cf6', strokeWidth: 3, fill: '#ffffff' }}
                     />
+                    
+                    {/* Enhanced Gradient Definitions */}
+                    <defs>
+                      <linearGradient id="radarGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor="#8b5cf6" />
+                        <stop offset="50%" stopColor="#a855f7" />
+                        <stop offset="100%" stopColor="#7c3aed" />
+                      </linearGradient>
+                      <radialGradient id="radarFillGradient" cx="50%" cy="50%" r="50%">
+                        <stop offset="0%" stopColor="#8b5cf6" stopOpacity="0.4" />
+                        <stop offset="100%" stopColor="#7c3aed" stopOpacity="0.1" />
+                      </radialGradient>
+                      <linearGradient id="radarDotGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor="#a855f7" />
+                        <stop offset="100%" stopColor="#8b5cf6" />
+                      </linearGradient>
+                    </defs>
                   </RadarChart>
                 </ResponsiveContainer>
               </div>
