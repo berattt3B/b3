@@ -1,5 +1,7 @@
 // Tekrar Kartları için örnek sorular ve cevaplar
-export const sampleFlashcards = [
+import type { InsertFlashcard } from "@shared/schema";
+
+export const sampleFlashcards: InsertFlashcard[] = [
   // TYT Matematik
   {
     examType: "TYT",

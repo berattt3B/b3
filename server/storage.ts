@@ -158,6 +158,8 @@ export class MemStorage implements IStorage {
       completed: insertTask.completed ?? false,
       completedAt: null,
       dueDate: insertTask.dueDate ?? null,
+      recurrenceType: insertTask.recurrenceType ?? "none",
+      recurrenceEndDate: insertTask.recurrenceEndDate ?? null,
       createdAt: new Date(),
     };
     this.tasks.set(id, task);
