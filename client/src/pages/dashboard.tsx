@@ -239,16 +239,22 @@ export default function Dashboard() {
     }
   };
 
-  // Generate recent months heatmap data (today is the last box, focusing on current period)
+  // Generate yearly heatmap data from January to September
   const generateYearlyHeatmapData = () => {
     const data = [];
     const today = new Date();
+    const currentYear = today.getFullYear();
     
-    // Generate 90 days (about 3 months) ending with today for better focus on recent activity
-    for (let i = 89; i >= 0; i--) {
-      const date = new Date(today);
-      date.setDate(today.getDate() - i); // Go back i days from today
-      const dateStr = date.toISOString().split('T')[0];
+    // Start from January 1st of current year
+    const startDate = new Date(currentYear, 0, 1); // January 1st
+    // End at September 30th or today, whichever is earlier
+    const endDate = new Date(currentYear, 8, 30); // September 30th
+    const actualEndDate = today < endDate ? today : endDate;
+    
+    // Generate data from January 1st to end date
+    const currentDate = new Date(startDate);
+    while (currentDate <= actualEndDate) {
+      const dateStr = currentDate.toISOString().split('T')[0];
       
       // Calculate activity intensity for this day
       const dayQuestions = questionLogs.filter(log => log.study_date === dateStr);
@@ -260,18 +266,25 @@ export default function Dashboard() {
       
       const studyIntensity = Math.min((dayQuestions.length * 2 + dayTasks.length) / 10, 1);
       
+      // Check if this is today
+      const isToday = dateStr === today.toISOString().split('T')[0];
+      
       data.push({
         date: dateStr,
-        day: date.getDate(),
-        month: date.getMonth(),
-        dayOfWeek: date.getDay(), // 0 = Sunday, 1 = Monday, etc.
+        day: currentDate.getDate(),
+        month: currentDate.getMonth(),
+        dayOfWeek: currentDate.getDay(), // 0 = Sunday, 1 = Monday, etc.
         intensity: studyIntensity,
         count: dayQuestions.length + dayTasks.length,
         questionCount: dayQuestions.length,
         taskCount: dayTasks.length,
-        isToday: i === 0 // Mark today's box
+        isToday: isToday
       });
+      
+      // Move to next day
+      currentDate.setDate(currentDate.getDate() + 1);
     }
+    
     return data;
   };
 
@@ -451,7 +464,7 @@ export default function Dashboard() {
                 <CalendarDays className="h-6 w-6 text-purple-500" />
                 📈 Aylık Çalışma Heatmap
               </CardTitle>
-              <p className="text-sm text-purple-600/70 dark:text-purple-400/70 font-medium">Son 90 günlük çalışma yoğunluğu - Bugün sağdaki son kutu</p>
+              <p className="text-sm text-purple-600/70 dark:text-purple-400/70 font-medium">Ocak-Eylül 2025 çalışma yoğunluğu - Bugünkü tarih parlayan kutu</p>
             </CardHeader>
             <CardContent className="pt-6">
               {/* GitHub-style yearly contribution graph */}
@@ -459,21 +472,21 @@ export default function Dashboard() {
                 <div className="inline-block">
                   {/* Month labels */}
                   <div className="flex mb-2">
-                  <div className="w-6"></div> {/* Space for day labels */}
+                  <div className="w-8"></div> {/* Space for day labels */}
                   {(() => {
                     const monthNames = [
-                      'Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz',
-                      'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'
+                      'Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran',
+                      'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'
                     ];
                     const currentMonth = new Date().getMonth();
                     const months = [];
                     
-                    // Generate 3 recent months for better visibility
-                    for (let i = 2; i >= 0; i--) {
-                      const monthIndex = (currentMonth - i + 12) % 12;
+                    // Generate all months from January (0) to September (8)
+                    for (let monthIndex = 0; monthIndex <= 8; monthIndex++) {
+                      const isCurrentMonth = monthIndex === currentMonth;
                       months.push(
-                        <div key={`month-${i}`} className={`text-xs font-medium ${i === 0 ? 'text-purple-700 dark:text-purple-300' : 'text-muted-foreground'}`} style={{ width: '80px', textAlign: 'left' }}>
-                          {monthNames[monthIndex]} {i === 0 ? '(Şu an)' : ''}
+                        <div key={`month-${monthIndex}`} className={`text-xs font-medium px-2 ${isCurrentMonth ? 'text-purple-700 dark:text-purple-300 font-bold' : 'text-muted-foreground'}`} style={{ minWidth: '70px', textAlign: 'center' }}>
+                          {monthNames[monthIndex]} {isCurrentMonth ? '⭐' : ''}
                         </div>
                       );
                     }
@@ -484,14 +497,14 @@ export default function Dashboard() {
                 {/* Heatmap grid */}
                 <div className="flex">
                   {/* Day labels */}
-                  <div className="flex flex-col justify-between mr-2" style={{ height: '91px' }}>
-                    <div className="text-xs text-muted-foreground h-3 flex items-center">Pzt</div>
-                    <div className="text-xs text-transparent h-3">Sal</div>
-                    <div className="text-xs text-muted-foreground h-3 flex items-center">Çar</div>
-                    <div className="text-xs text-transparent h-3">Per</div>
-                    <div className="text-xs text-muted-foreground h-3 flex items-center">Cum</div>
-                    <div className="text-xs text-transparent h-3">Cmt</div>
-                    <div className="text-xs text-muted-foreground h-3 flex items-center">Paz</div>
+                  <div className="flex flex-col justify-between mr-3" style={{ height: '147px' }}>
+                    <div className="text-xs text-muted-foreground h-5 flex items-center">Pzt</div>
+                    <div className="text-xs text-transparent h-5">Sal</div>
+                    <div className="text-xs text-muted-foreground h-5 flex items-center">Çar</div>
+                    <div className="text-xs text-transparent h-5">Per</div>
+                    <div className="text-xs text-muted-foreground h-5 flex items-center">Cum</div>
+                    <div className="text-xs text-transparent h-5">Cmt</div>
+                    <div className="text-xs text-muted-foreground h-5 flex items-center">Paz</div>
                   </div>
                   
                   {/* Weeks grid */}
@@ -503,7 +516,7 @@ export default function Dashboard() {
                             return (
                               <div
                                 key={dayIndex}
-                                className="w-3 h-3 rounded-sm bg-transparent"
+                                className="w-5 h-5 rounded-md bg-transparent"
                               />
                             );
                           }
@@ -512,16 +525,16 @@ export default function Dashboard() {
                           return (
                             <div
                               key={dayIndex}
-                              className={`w-3 h-3 rounded-sm border transition-all duration-200 hover:scale-125 cursor-pointer ${
+                              className={`w-5 h-5 rounded-md border transition-all duration-200 hover:scale-125 cursor-pointer ${
                                 day.isToday 
-                                  ? 'border-2 border-orange-400 dark:border-orange-300 shadow-lg shadow-orange-200 dark:shadow-orange-900' 
+                                  ? 'border-2 border-purple-400 dark:border-purple-300 shadow-lg shadow-purple-300 dark:shadow-purple-800 animate-pulse' 
                                   : day.intensity === 0 
                                     ? 'bg-gray-100 dark:bg-gray-800 border-gray-200 dark:border-gray-700' 
                                     : 'border-purple-300 dark:border-purple-600'
                               }`}
                               style={{
                                 backgroundColor: day.isToday 
-                                  ? (day.intensity > 0 ? `rgba(249, 115, 22, 0.8)` : `rgba(249, 115, 22, 0.2)`)
+                                  ? (day.intensity > 0 ? `rgba(147, 51, 234, 0.8)` : `rgba(147, 51, 234, 0.3)`)
                                   : day.intensity > 0 ? `rgba(147, 51, 234, ${opacity})` : undefined
                               }}
                               title={`${day.date}${day.isToday ? ' (BUGÜN)' : ''}: ${day.count} aktivite (${day.questionCount} soru, ${day.taskCount} görev)`}
