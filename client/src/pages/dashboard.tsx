@@ -19,6 +19,15 @@ import { Separator } from "@/components/ui/separator";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
+// Utility function for title case conversion
+const toTitleCase = (str: string): string => {
+  return str.trim()
+    .toLowerCase()
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+};
+
 interface DailySummary {
   date: string;
   tasksCompleted: number;
@@ -751,7 +760,7 @@ export default function Dashboard() {
                         </div>
                         {log.wrong_topics && log.wrong_topics.length > 0 && (
                           <div className="mt-2 text-xs text-red-600">
-                            <span className="font-medium">Yanlış Konular:</span> {log.wrong_topics.join(', ')}
+                            {log.wrong_topics.join(', ')}
                           </div>
                         )}
                       </div>
@@ -886,7 +895,7 @@ export default function Dashboard() {
                         <div className="flex items-center justify-between mb-6">
                           <div className="flex items-center gap-6">
                             <div className="relative">
-                              <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-green-500/20 flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300 group-hover:scale-110">
+                              <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-green-500/20 flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300">
                                 <span className="text-4xl filter drop-shadow-lg">{examEmoji}</span>
                               </div>
                               {relevantNet >= (examType === 'TYT' ? 90 : 50) && (
@@ -1035,7 +1044,7 @@ export default function Dashboard() {
                         </div>
                         {question.wrong_topics && question.wrong_topics.length > 0 && (
                           <div className="text-xs text-red-600 mt-1">
-                            Yanlış konular: {question.wrong_topics.join(', ')}
+                            {question.wrong_topics.join(', ')}
                           </div>
                         )}
                       </div>
@@ -1240,11 +1249,7 @@ export default function Dashboard() {
                     onKeyPress={(e) => {
                       if (e.key === 'Enter' && wrongTopicInput.trim()) {
                         // Title case conversion: her kelimenin baş harfini büyük yap
-                        const titleCaseTopic = wrongTopicInput.trim()
-                          .toLowerCase()
-                          .split(' ')
-                          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-                          .join(' ');
+                        const titleCaseTopic = toTitleCase(wrongTopicInput);
                         
                         setNewQuestion({
                           ...newQuestion, 
@@ -1593,7 +1598,7 @@ export default function Dashboard() {
                           value={currentWrongTopics.turkce || ""}
                           onChange={(e) => {
                             setCurrentWrongTopics({...currentWrongTopics, turkce: e.target.value});
-                            const topics = e.target.value.split(',').map(t => t.trim()).filter(t => t.length > 0);
+                            const topics = e.target.value.split(',').map(t => toTitleCase(t.trim())).filter(t => t.length > 0);
                             setNewExamResult({
                               ...newExamResult,
                               subjects: {
@@ -1695,7 +1700,7 @@ export default function Dashboard() {
                           value={currentWrongTopics.matematik || ""}
                           onChange={(e) => {
                             setCurrentWrongTopics({...currentWrongTopics, matematik: e.target.value});
-                            const topics = e.target.value.split(',').map(t => t.trim()).filter(t => t.length > 0);
+                            const topics = e.target.value.split(',').map(t => toTitleCase(t.trim())).filter(t => t.length > 0);
                             setNewExamResult({
                               ...newExamResult,
                               subjects: {
@@ -1797,7 +1802,7 @@ export default function Dashboard() {
                           value={currentWrongTopics.sosyal || ""}
                           onChange={(e) => {
                             setCurrentWrongTopics({...currentWrongTopics, sosyal: e.target.value});
-                            const topics = e.target.value.split(',').map(t => t.trim()).filter(t => t.length > 0);
+                            const topics = e.target.value.split(',').map(t => toTitleCase(t.trim())).filter(t => t.length > 0);
                             setNewExamResult({
                               ...newExamResult,
                               subjects: {
@@ -1899,7 +1904,7 @@ export default function Dashboard() {
                           value={currentWrongTopics.fen || ""}
                           onChange={(e) => {
                             setCurrentWrongTopics({...currentWrongTopics, fen: e.target.value});
-                          const topics = e.target.value.split(',').map(t => t.trim()).filter(t => t.length > 0);
+                          const topics = e.target.value.split(',').map(t => toTitleCase(t.trim())).filter(t => t.length > 0);
                           setNewExamResult({
                             ...newExamResult,
                             subjects: {
@@ -1994,7 +1999,7 @@ export default function Dashboard() {
                         value={currentWrongTopics.matematik || ""}
                         onChange={(e) => {
                           setCurrentWrongTopics({...currentWrongTopics, matematik: e.target.value});
-                          const topics = e.target.value.split(',').map(t => t.trim()).filter(t => t.length > 0);
+                          const topics = e.target.value.split(',').map(t => toTitleCase(t.trim())).filter(t => t.length > 0);
                           setNewExamResult({
                             ...newExamResult,
                             subjects: {
@@ -2078,7 +2083,7 @@ export default function Dashboard() {
                         value={currentWrongTopics.fizik || ""}
                         onChange={(e) => {
                           setCurrentWrongTopics({...currentWrongTopics, fizik: e.target.value});
-                          const topics = e.target.value.split(',').map(t => t.trim()).filter(t => t.length > 0);
+                          const topics = e.target.value.split(',').map(t => toTitleCase(t.trim())).filter(t => t.length > 0);
                           setNewExamResult({
                             ...newExamResult,
                             subjects: {
@@ -2162,7 +2167,7 @@ export default function Dashboard() {
                         value={currentWrongTopics.kimya || ""}
                         onChange={(e) => {
                           setCurrentWrongTopics({...currentWrongTopics, kimya: e.target.value});
-                          const topics = e.target.value.split(',').map(t => t.trim()).filter(t => t.length > 0);
+                          const topics = e.target.value.split(',').map(t => toTitleCase(t.trim())).filter(t => t.length > 0);
                           setNewExamResult({
                             ...newExamResult,
                             subjects: {
@@ -2246,7 +2251,7 @@ export default function Dashboard() {
                         value={currentWrongTopics.biyoloji || ""}
                         onChange={(e) => {
                           setCurrentWrongTopics({...currentWrongTopics, biyoloji: e.target.value});
-                          const topics = e.target.value.split(',').map(t => t.trim()).filter(t => t.length > 0);
+                          const topics = e.target.value.split(',').map(t => toTitleCase(t.trim())).filter(t => t.length > 0);
                           setNewExamResult({
                             ...newExamResult,
                             subjects: {

@@ -310,13 +310,133 @@ export function AdvancedCharts() {
         </CardHeader>
         <CardContent className="pt-8 pb-8 relative min-h-[400px]">
           {(() => {
-            // Filter only question logs that have structured wrong topic analysis from "Yanlış Konu Analizi"
-            const wrongTopicAnalysisLogs = questionLogs.filter(log => 
-              log.wrong_topics_json && 
-              log.wrong_topics_json.trim() !== '' &&
-              log.wrong_topics_json !== 'null' &&
-              log.wrong_topics_json !== '[]'
-            );
+            // Collect ALL wrong topic data from both question logs and exam results
+            let allWrongTopicData: Array<{
+              topic: string;
+              source: 'question' | 'exam';
+              subject: string;
+              exam_type: string;
+              wrong_count: number;
+              study_date: string;
+              difficulty?: 'kolay' | 'orta' | 'zor';
+              category?: 'kavram' | 'hesaplama' | 'analiz' | 'dikkatsizlik';
+            }> = [];
+
+            // Process question logs - both structured (wrong_topics_json) and simple (wrong_topics)
+            questionLogs.forEach(log => {
+              if (log.wrong_topics && log.wrong_topics.length > 0) {
+                // First try to parse structured data from wrong_topics_json
+                let structuredTopics: Array<{
+                  topic: string;
+                  difficulty: 'kolay' | 'orta' | 'zor';
+                  category: 'kavram' | 'hesaplama' | 'analiz' | 'dikkatsizlik';
+                }> = [];
+                
+                try {
+                  if (log.wrong_topics_json && log.wrong_topics_json.trim() !== '' && log.wrong_topics_json !== 'null' && log.wrong_topics_json !== '[]') {
+                    structuredTopics = JSON.parse(log.wrong_topics_json);
+                  }
+                } catch (e) {
+                  console.error('Error parsing wrong_topics_json:', e);
+                }
+
+                // Add structured topics if available
+                if (structuredTopics.length > 0) {
+                  structuredTopics.forEach(topicItem => {
+                    allWrongTopicData.push({
+                      topic: topicItem.topic,
+                      source: 'question',
+                      subject: log.subject,
+                      exam_type: log.exam_type,
+                      wrong_count: parseInt(log.wrong_count) || 0,
+                      study_date: log.study_date,
+                      difficulty: topicItem.difficulty,
+                      category: topicItem.category
+                    });
+                  });
+                } else {
+                  // Fall back to simple wrong_topics array
+                  log.wrong_topics.forEach(topic => {
+                    const topicName = typeof topic === 'string' ? topic : topic.topic || '';
+                    if (topicName) {
+                      allWrongTopicData.push({
+                        topic: topicName,
+                        source: 'question',
+                        subject: log.subject,
+                        exam_type: log.exam_type,
+                        wrong_count: parseInt(log.wrong_count) || 0,
+                        study_date: log.study_date
+                      });
+                    }
+                  });
+                }
+              }
+            });
+
+            // Process exam results
+            examResults.forEach(exam => {
+              if (exam.subjects_data) {
+                try {
+                  const subjectsData = JSON.parse(exam.subjects_data);
+                  Object.entries(subjectsData).forEach(([subjectKey, data]: [string, any]) => {
+                    if (data.wrong_topics && data.wrong_topics.length > 0) {
+                      const subjectNameMap: {[key: string]: string} = {
+                        'turkce': 'Türkçe',
+                        'matematik': 'Matematik',
+                        'sosyal': 'Sosyal',
+                        'fen': 'Fen',
+                        'fizik': 'Fizik',
+                        'kimya': 'Kimya',
+                        'biyoloji': 'Biyoloji'
+                      };
+                      const subjectName = subjectNameMap[subjectKey] || subjectKey;
+                      
+                      data.wrong_topics.forEach((topic: string) => {
+                        allWrongTopicData.push({
+                          topic: topic,
+                          source: 'exam',
+                          subject: subjectName,
+                          exam_type: exam.exam_type || 'TYT',
+                          wrong_count: parseInt(data.wrong) || 0,
+                          study_date: exam.exam_date
+                        });
+                      });
+                    }
+                  });
+                } catch (e) {
+                  console.error('Error parsing subjects_data:', e);
+                }
+              }
+            });
+
+            // Group by topic and aggregate data
+            const topicAggregated = allWrongTopicData.reduce((acc, item) => {
+              const key = `${item.subject}-${item.topic}`;
+              if (acc[key]) {
+                acc[key].frequency += 1;
+                acc[key].totalWrong += item.wrong_count;
+                if (item.study_date > acc[key].lastSeen) {
+                  acc[key].lastSeen = item.study_date;
+                  acc[key].difficulty = item.difficulty;
+                  acc[key].category = item.category;
+                }
+              } else {
+                acc[key] = {
+                  topic: item.topic,
+                  subject: item.subject,
+                  exam_type: item.exam_type,
+                  frequency: 1,
+                  totalWrong: item.wrong_count,
+                  lastSeen: item.study_date,
+                  difficulty: item.difficulty,
+                  category: item.category,
+                  sources: [item.source]
+                };
+              }
+              return acc;
+            }, {} as {[key: string]: any});
+
+            const wrongTopicAnalysisData = Object.values(topicAggregated).sort((a: any, b: any) => b.frequency - a.frequency);
             
             if (isLoading) {
               return (
@@ -334,103 +454,78 @@ export function AdvancedCharts() {
               );
             }
             
-            if (wrongTopicAnalysisLogs.length === 0) {
+            if (wrongTopicAnalysisData.length === 0) {
               return (
                 <div className="text-center py-16 text-muted-foreground">
                   <div className="w-24 h-24 rounded-full bg-gradient-to-br from-blue-100 to-cyan-100 dark:from-blue-900/30 dark:to-cyan-900/30 flex items-center justify-center mx-auto mb-6 shadow-lg">
                     <Brain className="h-12 w-12 text-blue-500" />
                   </div>
                   <h4 className="text-2xl font-semibold text-blue-700 dark:text-blue-300 mb-3">Henüz hata analizi verisi yok</h4>
-                  <p className="text-base opacity-75">Soru ekleyip "Yanlış Konu Analizi" bölümünü doldurdukça hata sıklığınız burada görünecek</p>
+                  <p className="text-base opacity-75">Soru veya deneme ekleyip yanlış konuları girdikçe hata sıklığınız burada görünecek</p>
                 </div>
               );
             }
             
             return (
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                {wrongTopicAnalysisLogs.slice(0, 15).map((log, index) => {
-                  // Parse the structured wrong topics JSON data
-                  let parsedTopics: Array<{
-                    topic: string;
-                    difficulty: 'kolay' | 'orta' | 'zor';
-                    category: 'kavram' | 'hesaplama' | 'analiz' | 'dikkatsizlik';
-                    notes?: string;
-                  }> = [];
-                  
-                  try {
-                    if (log.wrong_topics_json) {
-                      parsedTopics = JSON.parse(log.wrong_topics_json);
-                    }
-                  } catch (e) {
-                    console.error('Error parsing wrong_topics_json:', e);
-                  }
-                  
-                  return (
-                    <div key={index} className="bg-white/70 dark:bg-gray-900/70 rounded-2xl p-6 border border-orange-200/50 dark:border-orange-700/50 hover:shadow-2xl transition-all duration-300 hover:scale-105 backdrop-blur-sm relative overflow-hidden group/card">
-                      <div className="absolute inset-0 bg-gradient-to-br from-orange-50/50 to-red-50/30 dark:from-orange-950/20 dark:to-red-950/10 opacity-0 group-hover/card:opacity-100 transition-opacity duration-300"></div>
-                      <div className="relative">
-                        <div className="flex items-center justify-between mb-4">
-                          <div className="flex items-center gap-3">
-                            <div className={`w-4 h-4 rounded-full shadow-md ${
-                              log.exam_type === 'TYT' ? 'bg-blue-500' : 'bg-purple-500'
-                            }`}></div>
-                            <span className="text-base font-bold text-orange-700 dark:text-orange-300">
-                              {log.exam_type} {log.subject}
+                {wrongTopicAnalysisData.slice(0, 15).map((item: any, index) => (
+                  <div key={index} className="bg-white/70 dark:bg-gray-900/70 rounded-2xl p-6 border border-orange-200/50 dark:border-orange-700/50 hover:shadow-2xl transition-all duration-300 hover:scale-105 backdrop-blur-sm relative overflow-hidden group/card">
+                    <div className="absolute inset-0 bg-gradient-to-br from-orange-50/50 to-red-50/30 dark:from-orange-950/20 dark:to-red-950/10 opacity-0 group-hover/card:opacity-100 transition-opacity duration-300"></div>
+                    <div className="relative">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-3">
+                          <div className={`w-4 h-4 rounded-full shadow-md ${
+                            item.exam_type === 'TYT' ? 'bg-blue-500' : 'bg-purple-500'
+                          }`}></div>
+                          <span className="text-base font-bold text-orange-700 dark:text-orange-300">
+                            {item.exam_type} {item.subject}
+                          </span>
+                        </div>
+                        <div className="text-sm text-orange-600 dark:text-orange-400 bg-gradient-to-r from-orange-100 to-red-100 dark:from-orange-900/40 dark:to-red-900/40 px-3 py-1.5 rounded-full font-semibold shadow-md">
+                          {item.frequency} kez
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-3 mb-4">
+                        <div className="text-sm bg-white/50 dark:bg-gray-800/50 p-3 rounded-xl">
+                          <div className="font-semibold text-gray-700 dark:text-gray-300 mb-2">{item.topic}</div>
+                          <div className="flex gap-2 flex-wrap">
+                            {item.difficulty && (
+                              <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                                item.difficulty === 'kolay' ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300' :
+                                item.difficulty === 'orta' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300' :
+                                'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300'
+                              }`}>
+                                📊 {item.difficulty}
+                              </span>
+                            )}
+                            {item.category && (
+                              <span className="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 font-medium">
+                                🔍 {item.category === 'kavram' ? 'Kavram Eksikliği' :
+                                    item.category === 'hesaplama' ? 'Hesaplama Hatası' :
+                                    item.category === 'analiz' ? 'Analiz Sorunu' : 'Dikkatsizlik'}
+                              </span>
+                            )}
+                            <span className="text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-700 dark:bg-gray-900/40 dark:text-gray-300 font-medium">
+                              📈 {item.totalWrong} yanlış
                             </span>
                           </div>
-                          <div className="text-sm text-orange-600 dark:text-orange-400 bg-gradient-to-r from-orange-100 to-red-100 dark:from-orange-900/40 dark:to-red-900/40 px-3 py-1.5 rounded-full font-semibold shadow-md">
-                            {log.wrong_count} yanlış
-                          </div>
                         </div>
-                        
-                        <div className="space-y-3 mb-4">
-                          {parsedTopics.slice(0, 3).map((topicItem, topicIndex) => (
-                            <div key={topicIndex} className="text-sm bg-white/50 dark:bg-gray-800/50 p-3 rounded-xl">
-                              <div className="font-semibold text-gray-700 dark:text-gray-300 mb-2">{topicItem.topic}</div>
-                              <div className="flex gap-2 flex-wrap">
-                                <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-                                  topicItem.difficulty === 'kolay' ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300' :
-                                  topicItem.difficulty === 'orta' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300' :
-                                  'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300'
-                                }`}>
-                                  📊 {topicItem.difficulty}
-                                </span>
-                                <span className="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 font-medium">
-                                  🔍 {topicItem.category === 'kavram' ? 'Kavram Eksikliği' :
-                                      topicItem.category === 'hesaplama' ? 'Hesaplama Hatası' :
-                                      topicItem.category === 'analiz' ? 'Analiz Sorunu' : 'Dikkatsizlik'}
-                                </span>
-                              </div>
-                              {topicItem.notes && (
-                                <div className="mt-2 text-xs text-gray-600 dark:text-gray-400 italic">
-                                  "{topicItem.notes}"
-                                </div>
-                              )}
-                            </div>
-                          ))}
-                          {parsedTopics.length > 3 && (
-                            <div className="text-sm text-gray-500 text-center bg-white/30 dark:bg-gray-800/30 p-2 rounded-lg">
-                              +{parsedTopics.length - 3} konu daha...
-                            </div>
-                          )}
+                      </div>
+                      
+                      <div className="flex items-center justify-between text-sm text-muted-foreground pt-3 border-t border-orange-200/40 dark:border-orange-700/40">
+                        <div className="flex items-center gap-2">
+                          <Calendar className="h-4 w-4" />
+                          <span className="font-medium">{new Date(item.lastSeen).toLocaleDateString('tr-TR')}</span>
                         </div>
-                        
-                        <div className="flex items-center justify-between text-sm text-muted-foreground pt-3 border-t border-orange-200/40 dark:border-orange-700/40">
-                          <div className="flex items-center gap-2">
-                            <Calendar className="h-4 w-4" />
-                            <span className="font-medium">{new Date(log.study_date).toLocaleDateString('tr-TR')}</span>
-                          </div>
-                          {log.time_spent_minutes && (
-                            <div className="flex items-center gap-2">
-                              <TrendingDown className="h-4 w-4" />
-                              <span className="font-medium">{log.time_spent_minutes} dk</span>
-                            </div>
-                          )}
+                        <div className="flex items-center gap-2">
+                          <TrendingDown className="h-4 w-4" />
+                          <span className="font-medium">Son hata</span>
                         </div>
                       </div>
                     </div>
-                  );
-                })}
+                  </div>
+                ))}
               </div>
             );
           })()}
