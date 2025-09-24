@@ -81,7 +81,9 @@ export const flashcards = pgTable("flashcards", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   question: text("question").notNull(),
   answer: text("answer").notNull(),
+  examType: text("exam_type", { enum: ["TYT", "AYT"] }).notNull().default("TYT"),
   subject: text("subject", { enum: ["turkce", "matematik", "fizik", "kimya", "biyoloji", "tarih", "cografya", "felsefe", "genel"] }).notNull().default("genel"),
+  topic: text("topic"), // Konular için alan eklendi
   difficulty: text("difficulty", { enum: ["easy", "medium", "hard"] }).notNull().default("medium"),
   lastReviewed: timestamp("last_reviewed"),
   nextReview: timestamp("next_review").defaultNow(),

@@ -1,5 +1,6 @@
 import { type Task, type InsertTask, type Mood, type InsertMood, type Goal, type InsertGoal, type QuestionLog, type InsertQuestionLog, type ExamResult, type InsertExamResult, type Flashcard, type InsertFlashcard, type ExamSubjectNet, type InsertExamSubjectNet } from "@shared/schema";
 import { randomUUID } from "crypto";
+import { sampleFlashcards, type FlashcardError } from "./flashcard-data";
 
 export interface IStorage {
   // Task operations
@@ -48,6 +49,10 @@ export interface IStorage {
   deleteFlashcard(id: string): Promise<boolean>;
   getFlashcardsDue(): Promise<Flashcard[]>;
   reviewFlashcard(id: string, difficulty: 'easy' | 'medium' | 'hard'): Promise<Flashcard | undefined>;
+  seedSampleFlashcards(): Promise<void>;
+  addFlashcardError(error: FlashcardError): Promise<void>;
+  getFlashcardErrors(): Promise<FlashcardError[]>;
+  getFlashcardErrorsByDifficulty(): Promise<{ easy: FlashcardError[]; medium: FlashcardError[]; hard: FlashcardError[] }>;
   
   // Exam subject nets operations
   getExamSubjectNets(): Promise<ExamSubjectNet[]>;
@@ -66,6 +71,7 @@ export class MemStorage implements IStorage {
   private examResults: Map<string, ExamResult>;
   private flashcards: Map<string, Flashcard>;
   private examSubjectNets: Map<string, ExamSubjectNet>;
+  private flashcardErrors: FlashcardError[];
 
   constructor() {
     this.tasks = new Map();
@@ -75,6 +81,7 @@ export class MemStorage implements IStorage {
     this.examResults = new Map();
     this.flashcards = new Map();
     this.examSubjectNets = new Map();
+    this.flashcardErrors = [];
     
     // Initialize with some sample goals
     this.initializeSampleGoals();
@@ -407,7 +414,9 @@ export class MemStorage implements IStorage {
     const flashcard: Flashcard = {
       ...insertFlashcard,
       id,
+      examType: insertFlashcard.examType ?? "TYT",
       subject: insertFlashcard.subject ?? "genel",
+      topic: insertFlashcard.topic ?? null,
       difficulty: insertFlashcard.difficulty ?? "medium",
       lastReviewed: insertFlashcard.lastReviewed ?? null,
       nextReview: insertFlashcard.nextReview ?? new Date(),
@@ -671,6 +680,29 @@ export class MemStorage implements IStorage {
       }
     }
     return deletedAny;
+  }
+
+  // Flashcard error tracking methods
+  async seedSampleFlashcards(): Promise<void> {
+    for (const cardData of sampleFlashcards) {
+      await this.createFlashcard(cardData);
+    }
+  }
+
+  async addFlashcardError(error: FlashcardError): Promise<void> {
+    this.flashcardErrors.push(error);
+  }
+
+  async getFlashcardErrors(): Promise<FlashcardError[]> {
+    return [...this.flashcardErrors];
+  }
+
+  async getFlashcardErrorsByDifficulty(): Promise<{ easy: FlashcardError[]; medium: FlashcardError[]; hard: FlashcardError[] }> {
+    return {
+      easy: this.flashcardErrors.filter(error => error.difficulty === 'easy'),
+      medium: this.flashcardErrors.filter(error => error.difficulty === 'medium'),
+      hard: this.flashcardErrors.filter(error => error.difficulty === 'hard')
+    };
   }
 }
 
