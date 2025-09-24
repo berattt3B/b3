@@ -5,6 +5,7 @@ import { Link, useLocation } from "wouter";
 import { TrendingUp, BarChart3, Target, Brain, BookOpen, Plus, CalendarDays, X, FlaskConical, Trash2, AlertTriangle, Sparkles, Award, Clock, Zap, Edit } from "lucide-react";
 import { Task, Goal, QuestionLog, InsertQuestionLog, ExamResult, InsertExamResult } from "@shared/schema";
 import { DashboardSummaryCards } from "@/components/dashboard-summary-cards";
+import { WeeklyActivitySummary } from "@/components/weekly-activity-summary";
 import { AdvancedCharts } from "@/components/advanced-charts";
 import { QuestionAnalysisCharts } from "@/components/question-analysis-charts";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -332,6 +333,11 @@ export default function Dashboard() {
 
         {/* Summary Cards */}
         <DashboardSummaryCards />
+        
+        {/* Weekly Activity Summary */}
+        <div className="mb-8">
+          <WeeklyActivitySummary />
+        </div>
 
         {/* Solved Questions Count Section with CRUD */}
         <div className="grid grid-cols-1 gap-6 mb-8">
