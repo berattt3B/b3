@@ -1,8 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, BarChart, Bar, Cell } from "recharts";
-import { TrendingUp, Target, Activity, AlertTriangle, BarChart3, Brain, Loader2 } from "lucide-react";
+import { TrendingUp, Target, Activity, AlertTriangle, BarChart3, Brain, Loader2, List, BarChart as BarChartIcon, Calendar, Clock } from "lucide-react";
 import { ExamResult, ExamSubjectNet } from "@shared/schema";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
+import { Button } from "@/components/ui/button";
 
 interface TopicStats {
   topic: string;
@@ -19,6 +20,9 @@ interface PriorityTopic {
 }
 
 export function AdvancedCharts() {
+  // State for Priority Topics Analysis view toggle
+  const [priorityViewMode, setPriorityViewMode] = useState<'chart' | 'text'>('chart');
+
   const { data: examResults = [], isLoading: isLoadingExams } = useQuery<ExamResult[]>({
     queryKey: ["/api/exam-results"],
   });
@@ -160,29 +164,80 @@ export function AdvancedCharts() {
     <div className="space-y-8">
       {/* First Row - Priority & Error Analysis Charts */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-        {/* Priority Topics Bar Chart */}
-        <div className="bg-gradient-to-br from-red-50/50 via-card to-orange-50/50 dark:from-red-950/20 dark:via-card dark:to-orange-950/20 rounded-xl border-2 border-red-200/30 dark:border-red-800/30 p-6 relative overflow-hidden shadow-2xl">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-red-500/10 to-orange-500/10 rounded-full blur-3xl"></div>
+        {/* Enhanced Priority Topics Analysis with Toggle */}
+        <div className="bg-gradient-to-br from-red-50/60 via-card to-orange-50/40 dark:from-red-950/30 dark:via-card dark:to-orange-950/25 rounded-2xl border-2 border-red-200/40 dark:border-red-800/40 p-8 relative overflow-hidden shadow-2xl backdrop-blur-sm">
+          <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-red-500/10 to-orange-500/10 rounded-full blur-3xl animate-pulse"></div>
+          <div className="absolute -bottom-8 -left-8 w-32 h-32 bg-gradient-to-tr from-orange-500/10 to-red-500/10 rounded-full blur-2xl"></div>
           <div className="relative">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center">
-                <AlertTriangle className="h-6 w-6 mr-2 text-red-600" />
-                <h3 className="text-xl font-bold bg-gradient-to-r from-red-600 to-orange-600 bg-clip-text text-transparent">
-                  🎯 Öncelik Konuları Analizi
-                </h3>
+            <div className="flex items-center justify-between mb-8">
+              <div className="flex items-center space-x-3">
+                <div className="p-3 bg-gradient-to-br from-red-500 via-orange-500 to-red-600 rounded-xl shadow-lg">
+                  <AlertTriangle className="h-6 w-6 text-white drop-shadow-lg" />
+                </div>
+                <div>
+                  <h3 className="text-2xl font-bold bg-gradient-to-r from-red-600 via-orange-600 to-red-700 bg-clip-text text-transparent">
+                    🎯 Öncelik Konuları Analizi
+                  </h3>
+                  <p className="text-sm text-red-600/70 dark:text-red-400/70 font-medium">
+                    En çok dikkat gerektiren konular
+                  </p>
+                </div>
               </div>
-              <div className="text-xs text-muted-foreground bg-red-100/50 dark:bg-red-900/20 px-3 py-1 rounded-full">
-                {priorityTopicsData.length} sorunlu konu
+              
+              <div className="flex items-center gap-4">
+                <div className="text-xs text-muted-foreground bg-red-100/60 dark:bg-red-900/30 px-4 py-2 rounded-full border border-red-200/50 dark:border-red-700/50">
+                  {priorityTopicsData.length} sorunlu konu
+                </div>
+                
+                {/* View Toggle Buttons */}
+                <div className="flex bg-red-100/50 dark:bg-red-900/30 rounded-xl p-1 border border-red-200/50 dark:border-red-700/50">
+                  <Button
+                    variant={priorityViewMode === 'chart' ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => setPriorityViewMode('chart')}
+                    className={`px-3 py-2 rounded-lg transition-all duration-300 ${
+                      priorityViewMode === 'chart' 
+                        ? 'bg-gradient-to-r from-red-500 to-orange-500 text-white shadow-lg' 
+                        : 'text-red-600 dark:text-red-400 hover:bg-red-200/50 dark:hover:bg-red-800/50'
+                    }`}
+                    data-testid="button-priority-chart-view"
+                  >
+                    <BarChartIcon className="h-4 w-4 mr-2" />
+                    Grafik
+                  </Button>
+                  <Button
+                    variant={priorityViewMode === 'text' ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => setPriorityViewMode('text')}
+                    className={`px-3 py-2 rounded-lg transition-all duration-300 ${
+                      priorityViewMode === 'text' 
+                        ? 'bg-gradient-to-r from-red-500 to-orange-500 text-white shadow-lg' 
+                        : 'text-red-600 dark:text-red-400 hover:bg-red-200/50 dark:hover:bg-red-800/50'
+                    }`}
+                    data-testid="button-priority-text-view"
+                  >
+                    <List className="h-4 w-4 mr-2" />
+                    Liste
+                  </Button>
+                </div>
               </div>
             </div>
             
             {priorityTopicsData.length === 0 ? (
-              <div className="text-center py-16 text-muted-foreground">
-                <AlertTriangle className="h-12 w-12 mx-auto mb-4 opacity-40" />
-                <p className="text-sm font-medium">Henüz öncelik verisi yok</p>
-                <p className="text-xs mt-1">Yanlış konular ekleyince burada görünecek</p>
+              <div className="text-center py-20 text-muted-foreground">
+                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-red-100 to-orange-100 dark:from-red-900/30 dark:to-orange-900/30 flex items-center justify-center mx-auto mb-6 shadow-lg">
+                  <AlertTriangle className="h-10 w-10 text-red-500" />
+                </div>
+                <h4 className="text-lg font-semibold text-red-700 dark:text-red-300 mb-2">Henüz öncelik verisi yok</h4>
+                <p className="text-sm opacity-75 mb-4">Yanlış konular ekleyince burada görünecek</p>
+                <div className="flex justify-center space-x-1">
+                  <div className="w-2 h-2 rounded-full bg-red-500 animate-bounce"></div>
+                  <div className="w-2 h-2 rounded-full bg-orange-500 animate-bounce delay-100"></div>
+                  <div className="w-2 h-2 rounded-full bg-red-600 animate-bounce delay-200"></div>
+                </div>
               </div>
-            ) : (
+            ) : priorityViewMode === 'chart' ? (
+              /* Chart View */
               <div className="h-80">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={priorityTopicsData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
@@ -220,6 +275,85 @@ export function AdvancedCharts() {
                     </Bar>
                   </BarChart>
                 </ResponsiveContainer>
+              </div>
+            ) : (
+              /* Text View */
+              <div className="space-y-4 max-h-80 overflow-y-auto">
+                {priorityTopics.slice(0, 10).map((topic, index) => (
+                  <div 
+                    key={index}
+                    className="group bg-gradient-to-r from-white/90 to-red-50/50 dark:from-slate-800/90 dark:to-red-950/50 rounded-2xl border border-red-200/50 dark:border-red-700/30 p-5 hover:shadow-xl transition-all duration-500 hover:scale-[1.02] relative overflow-hidden"
+                    data-testid={`priority-topic-item-${index}`}
+                  >
+                    {/* Priority Ranking Badge */}
+                    <div className="absolute top-3 left-3">
+                      <div className={`flex items-center justify-center w-8 h-8 rounded-full text-white text-sm font-bold shadow-lg ${
+                        topic.improvementNeeded 
+                          ? 'bg-gradient-to-br from-red-500 to-red-600' 
+                          : topic.priority > 70 
+                            ? 'bg-gradient-to-br from-orange-500 to-orange-600'
+                            : 'bg-gradient-to-br from-yellow-500 to-yellow-600'
+                      }`}>
+                        #{index + 1}
+                      </div>
+                    </div>
+                    
+                    <div className="pl-12 space-y-3">
+                      {/* Topic Name and Priority */}
+                      <div className="flex items-center justify-between">
+                        <h4 className="font-bold text-lg text-red-800 dark:text-red-200 group-hover:text-red-600 transition-colors">
+                          {topic.topic}
+                        </h4>
+                        <div className="text-right">
+                          <div className="text-2xl font-bold text-red-600 dark:text-red-400">
+                            %{topic.priority.toFixed(1)}
+                          </div>
+                          <div className="text-xs text-red-600/70 dark:text-red-400/70">öncelik</div>
+                        </div>
+                      </div>
+                      
+                      {/* Status and Last Seen */}
+                      <div className="flex items-center justify-between">
+                        <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium ${
+                          topic.improvementNeeded
+                            ? 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300'
+                            : 'bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-300'
+                        }`}>
+                          {topic.improvementNeeded ? (
+                            <>
+                              <AlertTriangle className="h-3 w-3" />
+                              🔥 Acil Öncelik
+                            </>
+                          ) : (
+                            <>
+                              <Target className="h-3 w-3" />
+                              ⚠️ Dikkat Gerekli
+                            </>
+                          )}
+                        </div>
+                        
+                        <div className="flex items-center gap-1 text-xs text-red-600/70 dark:text-red-400/70">
+                          <Clock className="h-3 w-3" />
+                          Son: {new Date(topic.lastSeen).toLocaleDateString('tr-TR')}
+                        </div>
+                      </div>
+                      
+                      {/* Progress Bar */}
+                      <div className="w-full bg-red-100 dark:bg-red-900/30 rounded-full h-2">
+                        <div 
+                          className={`h-2 rounded-full transition-all duration-700 ${
+                            topic.improvementNeeded 
+                              ? 'bg-gradient-to-r from-red-500 to-red-600' 
+                              : topic.priority > 70 
+                                ? 'bg-gradient-to-r from-orange-500 to-orange-600'
+                                : 'bg-gradient-to-r from-yellow-500 to-yellow-600'
+                          }`}
+                          style={{ width: `${topic.priority}%` }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </div>
