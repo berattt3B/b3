@@ -696,7 +696,14 @@ function AdvancedChartsComponent() {
         <CardContent className="pt-6">
           {analysisMode === 'net' ? (
             // Net Analysis Chart with TYT/AYT targets display
-(
+            netAnalysisData.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground">
+                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30 flex items-center justify-center mx-auto mb-6 shadow-lg">
+                  <TrendingUp className="h-10 w-10 text-blue-500" />
+                </div>
+                <h4 className="text-lg font-semibold text-blue-700 dark:text-blue-300 mb-2">Henüz bir deneme verisi girilmedi.</h4>
+              </div>
+            ) : (
               <div className="space-y-6">
                 {/* Targets and Current Nets Display */}
                 <div className="grid grid-cols-2 gap-4 mb-6">

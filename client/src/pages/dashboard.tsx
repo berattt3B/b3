@@ -352,6 +352,15 @@ export default function Dashboard() {
     }));
   }, []);
 
+  const handleOpenQuestionDialog = useCallback(() => {
+    // Always refresh date to today when opening dialog
+    setNewQuestion(prev => ({
+      ...prev,
+      study_date: new Date().toISOString().split('T')[0] // Set to today's date
+    }));
+    setShowQuestionDialog(true);
+  }, []);
+
   const handleExamResultSubmit = useCallback(() => {
     // TYT Subjects: Türkçe, Sosyal, Matematik, Fen
     const tytSubjects = ['turkce', 'sosyal', 'matematik', 'fen'];
@@ -383,6 +392,7 @@ export default function Dashboard() {
     createExamResultMutation.mutate({
       exam_name: newExamResult.exam_name,
       exam_date: newExamResult.exam_date,
+      exam_type: newExamResult.exam_type, // Critical: Include exam_type for TYT/AYT differentiation
       tyt_net: Math.max(0, tytNet).toFixed(2), // Ensure non-negative and 2 decimal places
       ayt_net: Math.max(0, aytNet).toFixed(2), // Ensure non-negative and 2 decimal places
       subjects_data: JSON.stringify(newExamResult.subjects)
@@ -800,7 +810,7 @@ export default function Dashboard() {
                 </div>
                 <div className="flex gap-2">
                   <Button 
-                    onClick={() => setShowQuestionDialog(true)}
+                    onClick={handleOpenQuestionDialog}
                     size="sm" 
                     variant="outline"
                     className="text-xs border-green-300 text-green-700 hover:bg-green-50"
