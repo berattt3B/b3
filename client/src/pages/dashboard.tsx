@@ -478,7 +478,7 @@ export default function Dashboard() {
         {/* Summary Cards */}
         <DashboardSummaryCards />
         
-        {/* Monthly Study Heatmap */}
+        {/* Enhanced Study Heatmap - GitHub Style */}
         <div className="mb-8">
           <Card className="bg-gradient-to-br from-purple-50/50 via-card to-indigo-50/50 dark:from-purple-950/30 dark:via-card dark:to-indigo-950/30 backdrop-blur-sm border-2 border-purple-200/30 dark:border-purple-800/30 shadow-2xl">
             <CardHeader className="bg-gradient-to-r from-purple-500/10 to-indigo-500/10 rounded-t-lg border-b border-purple-200/30">
@@ -488,176 +488,135 @@ export default function Dashboard() {
               </CardTitle>
               <p className="text-sm text-purple-600/70 dark:text-purple-400/70 font-medium">Ocak-Eylül 2025 çalışma yoğunluğu - Bugünkü tarih parlayan kutu</p>
             </CardHeader>
-            <CardContent className="pt-6">
-              {/* GitHub-style yearly contribution graph */}
-              <div className="flex justify-center">
-                <div className="inline-block min-w-0">
-                  {/* Month labels */}
-                  <div className="flex mb-6 relative">
-                    <div className="w-12"></div> {/* Space for day labels */}
-                    <div className="flex gap-1 relative" style={{ width: `${heatmapWeeks.length * 30}px`, height: '32px' }}>
-                      {(() => {
-                        const monthNames = [
-                          'Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran',
-                          'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'
-                        ];
-                        const currentMonth = new Date().getMonth();
-                        const monthLabels = [];
-                        
-                        // Calculate which weeks each month spans
-                        const monthWeekMap = new Map();
-                        
-                        heatmapWeeks.forEach((week, weekIndex) => {
-                          week.forEach(day => {
-                            if (day && day.month !== undefined) {
-                              const monthKey = day.month;
-                              if (!monthWeekMap.has(monthKey)) {
-                                monthWeekMap.set(monthKey, { start: weekIndex, end: weekIndex });
-                              } else {
-                                monthWeekMap.get(monthKey).end = weekIndex;
+            <CardContent className="p-6">
+              {/* Optimized container to prevent overflow */}
+              <div className="w-full overflow-hidden">
+                <div className="flex flex-col items-center max-w-full">
+                  {/* Month labels optimized for container width */}
+                  <div className="w-full mb-4">
+                    <div className="flex justify-start">
+                      <div className="w-10"></div> {/* Space for day labels */}
+                      <div className="flex-1 relative h-8">
+                        {(() => {
+                          const monthNames = [
+                            'Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran',
+                            'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'
+                          ];
+                          const currentMonth = new Date().getMonth();
+                          const monthLabels = [];
+                          
+                          // Calculate which weeks each month spans
+                          const monthWeekMap = new Map();
+                          
+                          heatmapWeeks.forEach((week, weekIndex) => {
+                            week.forEach(day => {
+                              if (day && day.month !== undefined) {
+                                const monthKey = day.month;
+                                if (!monthWeekMap.has(monthKey)) {
+                                  monthWeekMap.set(monthKey, { start: weekIndex, end: weekIndex });
+                                } else {
+                                  monthWeekMap.get(monthKey).end = weekIndex;
+                                }
                               }
+                            });
+                          });
+                          
+                          // Generate month labels that fit within container
+                          monthWeekMap.forEach((range, monthIndex) => {
+                            const startWeek = range.start;
+                            const endWeek = range.end;
+                            const centerWeek = Math.floor((startWeek + endWeek) / 2);
+                            const leftPercentage = (centerWeek / Math.max(heatmapWeeks.length - 1, 1)) * 100;
+                            const isCurrentMonth = monthIndex === currentMonth;
+                            const weekSpan = endWeek - startWeek + 1;
+                            
+                            // Only show month labels if they have enough space
+                            if (weekSpan >= 1) {
+                              monthLabels.push(
+                                <div 
+                                  key={`month-${monthIndex}`} 
+                                  className={`absolute text-xs font-semibold px-2 py-1 rounded-lg transition-all duration-300 transform -translate-x-1/2 ${
+                                    isCurrentMonth 
+                                      ? 'text-white bg-purple-500 border border-purple-400 shadow-lg' 
+                                      : 'text-gray-700 dark:text-gray-300 bg-white/80 dark:bg-gray-800/80 border border-gray-300 dark:border-gray-600'
+                                  }`}
+                                  style={{ 
+                                    left: `${leftPercentage}%`,
+                                    top: '0px'
+                                  }}
+                                >
+                                  {monthNames[monthIndex]}
+                                  {isCurrentMonth && (
+                                    <div className="absolute -top-1 -right-1 w-2 h-2 bg-purple-400 rounded-full animate-pulse shadow-lg" />
+                                  )}
+                                </div>
+                              );
                             }
                           });
-                        });
-                        
-                        // Generate centered month labels
-                        monthWeekMap.forEach((range, monthIndex) => {
-                          const startWeek = range.start;
-                          const endWeek = range.end;
-                          const centerWeek = Math.floor((startWeek + endWeek) / 2);
-                          const leftPosition = centerWeek * 29; // 28px width + 1px gap
-                          const isCurrentMonth = monthIndex === currentMonth;
-                          const weekSpan = endWeek - startWeek + 1;
                           
-                          // Only show month labels if they have enough space (at least 2 weeks)
-                          if (weekSpan >= 2) {
-                            monthLabels.push(
-                              <div 
-                                key={`month-${monthIndex}`} 
-                                className={`absolute text-sm font-bold px-4 py-2 rounded-xl border-2 shadow-lg backdrop-blur-sm relative transition-all duration-300 hover:scale-105 ${
-                                  isCurrentMonth 
-                                    ? 'text-white bg-gradient-to-r from-purple-500 to-indigo-500 border-purple-400 shadow-purple-200 dark:shadow-purple-800' 
-                                    : 'text-gray-800 dark:text-gray-200 bg-white/90 dark:bg-gray-800/90 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
-                                }`}
-                                style={{ 
-                                  left: `${leftPosition}px`, 
-                                  transform: 'translateX(-50%)',
-                                  minWidth: 'fit-content',
-                                  textAlign: 'center',
-                                  top: '0px'
-                                }}
-                              >
-                                {monthNames[monthIndex]}
-                                {isCurrentMonth && (
-                                  <div className="absolute -top-1 -right-1 w-3 h-3 bg-yellow-400 rounded-full shadow-lg animate-bounce" 
-                                       style={{ 
-                                         boxShadow: '0 0 8px rgba(251, 191, 36, 0.6)' 
-                                       }}
-                                  />
-                                )}
-                              </div>
-                            );
-                          }
-                        });
-                        
-                        return monthLabels;
-                      })()}
+                          return monthLabels;
+                        })()}
+                      </div>
                     </div>
                   </div>
                 
-                {/* Heatmap grid */}
-                <div className="flex">
-                  {/* Day labels */}
-                  <div className="flex flex-col justify-between mr-4" style={{ height: '196px', width: '48px' }}>
-                    <div className="text-xs text-muted-foreground h-7 flex items-center justify-end pr-2 font-medium">Pzt</div>
-                    <div className="text-xs text-transparent h-7">Sal</div>
-                    <div className="text-xs text-muted-foreground h-7 flex items-center justify-end pr-2 font-medium">Çar</div>
-                    <div className="text-xs text-transparent h-7">Per</div>
-                    <div className="text-xs text-muted-foreground h-7 flex items-center justify-end pr-2 font-medium">Cum</div>
-                    <div className="text-xs text-transparent h-7">Cmt</div>
-                    <div className="text-xs text-muted-foreground h-7 flex items-center justify-end pr-2 font-medium">Paz</div>
-                  </div>
-                  
-                  {/* Weeks grid */}
-                  <div className="flex gap-1">
-                    {heatmapWeeks.map((week, weekIndex) => (
-                      <div key={weekIndex} className="flex flex-col gap-1">
-                        {week.map((day, dayIndex) => {
-                          if (!day) {
+                  {/* Heatmap grid - centered and contained */}
+                  <div className="flex items-start justify-center w-full max-w-full">
+                    {/* Day labels */}
+                    <div className="flex flex-col justify-between mr-3 flex-shrink-0" style={{ height: '168px' }}>
+                      <div className="text-xs text-muted-foreground h-6 flex items-center justify-end font-medium">Pzt</div>
+                      <div className="text-xs text-transparent h-6"></div>
+                      <div className="text-xs text-muted-foreground h-6 flex items-center justify-end font-medium">Çar</div>
+                      <div className="text-xs text-transparent h-6"></div>
+                      <div className="text-xs text-muted-foreground h-6 flex items-center justify-end font-medium">Cum</div>
+                      <div className="text-xs text-transparent h-6"></div>
+                      <div className="text-xs text-muted-foreground h-6 flex items-center justify-end font-medium">Paz</div>
+                    </div>
+                    
+                    {/* Weeks grid - responsive sizing */}
+                    <div className="flex gap-1 flex-wrap justify-center max-w-full">
+                      {heatmapWeeks.map((week, weekIndex) => (
+                        <div key={weekIndex} className="flex flex-col gap-1">
+                          {week.map((day, dayIndex) => {
+                            if (!day) {
+                              return (
+                                <div
+                                  key={dayIndex}
+                                  className="w-6 h-6 rounded bg-transparent"
+                                />
+                              );
+                            }
+                            
+                            const opacity = day.intensity === 0 ? 0.1 : Math.max(0.2, day.intensity);
+                            const currentMonth = new Date().getMonth();
+                            const isCurrentMonth = day.month === currentMonth;
+                            
                             return (
                               <div
                                 key={dayIndex}
-                                className="w-7 h-7 rounded-lg bg-transparent"
+                                className={`w-6 h-6 rounded transition-all duration-300 hover:scale-110 cursor-pointer relative ${
+                                  day.isToday 
+                                    ? 'border-2 border-purple-400 dark:border-purple-300 shadow-lg' 
+                                    : day.intensity === 0 
+                                      ? 'bg-gray-100/80 dark:bg-gray-800/80 hover:bg-gray-200 dark:hover:bg-gray-700' 
+                                      : 'hover:brightness-110'
+                                }`}
+                                style={{
+                                  backgroundColor: day.isToday 
+                                    ? (day.intensity > 0 ? `rgba(147, 51, 234, 0.9)` : `rgba(147, 51, 234, 0.4)`)
+                                    : day.intensity > 0 ? `rgba(147, 51, 234, ${opacity})` : undefined,
+                                  animation: day.isToday ? 'breathingPulse 2s ease-in-out infinite' : undefined,
+                                  boxShadow: day.isToday ? '0 0 15px rgba(147, 51, 234, 0.5)' : undefined
+                                }}
+                                title={`${day.date}${day.isToday ? ' (BUGÜN)' : ''}: ${day.count} aktivite (${day.questionCount} soru, ${day.taskCount} görev)`}
+                                onClick={() => handleHeatmapDayClick(day)}
                               />
                             );
-                          }
-                          
-                          const opacity = day.intensity === 0 ? 0.1 : Math.max(0.2, day.intensity);
-                          
-                          // Check if this is the first or last day of the month
-                          const isFirstDayOfMonth = day.day === 1;
-                          const isLastDayOfMonth = (() => {
-                            const currentDate = new Date(day.date);
-                            const nextMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
-                            return day.day === nextMonth.getDate();
-                          })();
-                          
-                          // Month-specific colors for markers
-                          const monthColors = [
-                            '#dc2626', '#ea580c', '#ca8a04', '#65a30d', // Ocak-Nisan
-                            '#059669', '#0891b2', '#2563eb', '#7c3aed', // Mayıs-Ağustos  
-                            '#c026d3', '#be185d', '#be123c', '#991b1b'  // Eylül-Aralık
-                          ];
-                          const monthColor = monthColors[day.month] || '#6b7280';
-                          
-                          return (
-                            <div
-                              key={dayIndex}
-                              className={`w-7 h-7 rounded-lg border-2 transition-all duration-300 hover:brightness-110 hover:shadow-xl hover:scale-105 cursor-pointer relative backdrop-blur-sm ${
-                                day.isToday 
-                                  ? 'border-purple-400 dark:border-purple-300 shadow-xl shadow-purple-300/50 dark:shadow-purple-800/50 ring-2 ring-purple-200/60 dark:ring-purple-700/60' 
-                                  : day.intensity === 0 
-                                    ? 'bg-gray-100/80 dark:bg-gray-800/80 border-gray-200/60 dark:border-gray-700/60 hover:bg-gray-200/90 dark:hover:bg-gray-700/90 shadow-sm' 
-                                    : 'border-purple-300/60 dark:border-purple-600/60 hover:border-purple-400/80 dark:hover:border-purple-500/80 shadow-md'
-                              }`}
-                              style={{
-                                backgroundColor: day.isToday 
-                                  ? (day.intensity > 0 ? `rgba(147, 51, 234, 0.85)` : `rgba(147, 51, 234, 0.35)`)
-                                  : day.intensity > 0 ? `rgba(147, 51, 234, ${opacity})` : undefined,
-                                animation: day.isToday ? 'breathing 1.8s ease-in-out infinite' : undefined,
-                                boxShadow: day.isToday ? '0 0 25px rgba(147, 51, 234, 0.5)' : day.intensity > 0 ? '0 2px 8px rgba(147, 51, 234, 0.2)' : undefined
-                              }}
-                              title={`${day.date}${day.isToday ? ' (BUGÜN)' : ''}: ${day.count} aktivite (${day.questionCount} soru, ${day.taskCount} görev)`}
-                              onClick={() => handleHeatmapDayClick(day)}
-                            >
-                              {day.isToday && (
-                                <>
-                                  <div className="absolute -top-1 -right-1 w-3 h-3 bg-purple-500 rounded-full shadow-lg animate-pulse" 
-                                       style={{ 
-                                         boxShadow: '0 0 10px rgba(147, 51, 234, 0.8), 0 0 20px rgba(147, 51, 234, 0.4)' 
-                                       }}
-                                  />
-                                </>
-                              )}
-                              
-                              {/* Month Start/End Markers */}
-                              {(isFirstDayOfMonth || isLastDayOfMonth) && (
-                                <div 
-                                  className={`absolute ${isFirstDayOfMonth ? '-top-1.5 -left-1.5' : '-bottom-1.5 -right-1.5'} w-3 h-3 rounded-full border-2 border-white shadow-lg animate-pulse`}
-                                  style={{ 
-                                    backgroundColor: monthColor,
-                                    boxShadow: `0 0 8px ${monthColor}60, 0 0 15px ${monthColor}30`
-                                  }}
-                                  title={`${isFirstDayOfMonth ? 'Ay Başı' : 'Ay Sonu'} - ${new Date(day.date).toLocaleDateString('tr-TR', { month: 'long' })}`}
-                                />
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    ))}
+                          })}
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                </div>
                 </div>
               </div>
               
@@ -861,69 +820,156 @@ export default function Dashboard() {
               </div>
             
             {examResults.length === 0 ? (
-              <div className="text-center py-16 text-muted-foreground">
-                <div className="w-24 h-24 rounded-full bg-gradient-to-br from-emerald-100 to-green-100 dark:from-emerald-900/30 dark:to-green-900/30 flex items-center justify-center mx-auto mb-6 shadow-lg">
-                  <Target className="h-12 w-12 text-emerald-500" />
+              <div className="text-center py-20 text-muted-foreground">
+                <div className="w-32 h-32 rounded-full bg-gradient-to-br from-emerald-100 to-green-100 dark:from-emerald-900/30 dark:to-green-900/30 flex items-center justify-center mx-auto mb-8 shadow-2xl animate-pulse">
+                  <Target className="h-16 w-16 text-emerald-500" />
                 </div>
-                <h4 className="text-xl font-semibold text-emerald-700 dark:text-emerald-300 mb-2">Henüz deneme kaydı yok</h4>
-                <p className="text-sm opacity-75 mb-6">İlk deneme sonucunuzu ekleyerek başlayın</p>
-                <div className="flex justify-center space-x-1">
-                  <div className="w-2 h-2 rounded-full bg-emerald-500 animate-bounce"></div>
-                  <div className="w-2 h-2 rounded-full bg-green-500 animate-bounce delay-100"></div>
-                  <div className="w-2 h-2 rounded-full bg-emerald-600 animate-bounce delay-200"></div>
+                <h4 className="text-3xl font-bold text-emerald-700 dark:text-emerald-300 mb-4">Henüz deneme kaydı yok</h4>
+                <p className="text-lg opacity-75 mb-8 max-w-md mx-auto">Üst kısımdaki "Deneme Ekle" butonunu kullanarak ilk deneme sonucunuzu ekleyebilirsiniz</p>
+                <div className="flex justify-center space-x-2">
+                  <div className="w-3 h-3 rounded-full bg-emerald-500 animate-bounce"></div>
+                  <div className="w-3 h-3 rounded-full bg-green-500 animate-bounce delay-150"></div>
+                  <div className="w-3 h-3 rounded-full bg-emerald-600 animate-bounce delay-300"></div>
                 </div>
               </div>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-6">
                 {examResults.map((exam, index) => {
-                  // Emoji selection based on index
-                  const emojis = ['🏆', '💯', '🏅', '✨', '🔥', '🚀', '🎆', '🎉', '🎨', '🏁', '📚', '🎯', '💡', '⚡', '🌟'];
-                  const examEmoji = emojis[index % emojis.length];
+                  // Enhanced emoji selection with performance-based logic
+                  const performanceEmojis = {
+                    excellent: ['🏆', '👑', '🌟', '💎', '🔥'],
+                    good: ['🏅', '✨', '💯', '🚀', '⭐'],
+                    average: ['📚', '🎯', '💡', '🎓', '📊'],
+                    improvement: ['💪', '🌱', '⚡', '🎨', '🔋']
+                  };
+                  
+                  const tytScore = parseFloat(exam.tyt_net) || 0;
+                  const aytScore = parseFloat(exam.ayt_net) || 0;
+                  const totalScore = tytScore + aytScore;
+                  
+                  let emojiCategory: keyof typeof performanceEmojis;
+                  if (totalScore >= 80) emojiCategory = 'excellent';
+                  else if (totalScore >= 60) emojiCategory = 'good';
+                  else if (totalScore >= 40) emojiCategory = 'average';
+                  else emojiCategory = 'improvement';
+                  
+                  const categoryEmojis = performanceEmojis[emojiCategory];
+                  const examEmoji = categoryEmojis[index % categoryEmojis.length];
+                  
+                  // Calculate performance indicators
+                  const isRecentExam = new Date(exam.exam_date) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+                  const examDate = new Date(exam.exam_date);
+                  const daysSinceExam = Math.floor((Date.now() - examDate.getTime()) / (1000 * 60 * 60 * 24));
                   
                   return (
-                    <Card key={exam.id} className="bg-gradient-to-r from-white via-emerald-50/30 to-green-50/30 dark:from-slate-800/60 dark:via-emerald-900/20 dark:to-green-900/20 hover:shadow-lg transition-all duration-300 border-emerald-200/50 dark:border-emerald-700/40 hover:scale-[1.02]">
-                      <CardContent className="p-6">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-4">
-                            <div className="flex items-center gap-3">
-                              <span className="text-3xl">{examEmoji}</span>
-                              <div>
-                                <div className="text-lg font-bold text-emerald-700 dark:text-emerald-300">
-                                  {exam.exam_name}
+                    <Card key={exam.id} className="group bg-gradient-to-br from-white via-emerald-50/40 to-green-50/30 dark:from-slate-800/80 dark:via-emerald-900/20 dark:to-green-900/15 hover:shadow-2xl transition-all duration-500 border-emerald-200/60 dark:border-emerald-700/50 hover:scale-[1.02] hover:rotate-1 relative overflow-hidden">
+                      {/* Animated Background Elements */}
+                      <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-emerald-400/10 to-green-400/5 rounded-full blur-2xl group-hover:scale-110 transition-transform duration-700"></div>
+                      <div className="absolute -bottom-8 -left-8 w-24 h-24 bg-gradient-to-tr from-green-400/10 to-emerald-400/5 rounded-full blur-xl group-hover:scale-110 transition-transform duration-700"></div>
+                      
+                      {isRecentExam && (
+                        <div className="absolute top-4 left-4 bg-gradient-to-r from-orange-400 to-red-400 text-white text-xs px-3 py-1.5 rounded-full font-bold shadow-lg animate-pulse">
+                          🆕 YENİ
+                        </div>
+                      )}
+                      
+                      <CardContent className="p-8 relative">
+                        <div className="flex items-center justify-between mb-6">
+                          <div className="flex items-center gap-6">
+                            <div className="relative">
+                              <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-green-500/20 flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300 group-hover:scale-110">
+                                <span className="text-4xl filter drop-shadow-lg">{examEmoji}</span>
+                              </div>
+                              {totalScore >= 80 && (
+                                <div className="absolute -top-2 -right-2 w-6 h-6 bg-gradient-to-br from-yellow-400 to-orange-400 rounded-full flex items-center justify-center shadow-lg">
+                                  <span className="text-xs">⭐</span>
                                 </div>
-                                <div className="text-sm text-muted-foreground">
-                                  {new Date(exam.exam_date).toLocaleDateString('tr-TR', { 
-                                    day: 'numeric', 
-                                    month: 'long', 
-                                    year: 'numeric' 
-                                  })}
+                              )}
+                            </div>
+                            <div>
+                              <div className="text-2xl font-bold text-emerald-700 dark:text-emerald-300 mb-2 group-hover:text-emerald-600 dark:group-hover:text-emerald-200 transition-colors">
+                                {exam.exam_name}
+                              </div>
+                              <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                                <div className="flex items-center gap-2">
+                                  <CalendarDays className="h-4 w-4" />
+                                  <span className="font-medium">
+                                    {examDate.toLocaleDateString('tr-TR', { 
+                                      day: 'numeric', 
+                                      month: 'long', 
+                                      year: 'numeric' 
+                                    })}
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <Clock className="h-4 w-4" />
+                                  <span>{daysSinceExam === 0 ? 'Bugün' : `${daysSinceExam} gün önce`}</span>
                                 </div>
                               </div>
                             </div>
                           </div>
                           
                           <div className="flex items-center gap-6">
-                            <div className="flex gap-4">
-                              <div className="text-center p-3 bg-gradient-to-br from-emerald-100 to-emerald-50 dark:from-emerald-900/30 dark:to-emerald-800/20 rounded-xl border border-emerald-200 dark:border-emerald-700/50">
-                                <span className="text-sm font-medium text-emerald-600 dark:text-emerald-400">TYT Net</span>
-                                <div className="text-2xl font-bold text-emerald-700 dark:text-emerald-300">{exam.tyt_net}</div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div className="text-center p-4 bg-gradient-to-br from-emerald-100/80 to-emerald-50/80 dark:from-emerald-900/40 dark:to-emerald-800/30 rounded-2xl border-2 border-emerald-200/60 dark:border-emerald-700/50 shadow-lg group-hover:shadow-xl transition-all duration-300">
+                                <div className="flex items-center justify-center gap-2 mb-2">
+                                  <div className="w-3 h-3 rounded-full bg-emerald-500 shadow-sm"></div>
+                                  <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">TYT Net</span>
+                                </div>
+                                <div className="text-3xl font-bold text-emerald-700 dark:text-emerald-300 mb-1">{exam.tyt_net}</div>
+                                <div className="text-xs text-emerald-600/70 dark:text-emerald-400/70 font-medium">/ 120 soruluk</div>
                               </div>
                               {exam.ayt_net !== "0" && (
-                                <div className="text-center p-3 bg-gradient-to-br from-blue-100 to-blue-50 dark:from-blue-900/30 dark:to-blue-800/20 rounded-xl border border-blue-200 dark:border-blue-700/50">
-                                  <span className="text-sm font-medium text-blue-600 dark:text-blue-400">AYT Net</span>
-                                  <div className="text-2xl font-bold text-blue-700 dark:text-blue-300">{exam.ayt_net}</div>
+                                <div className="text-center p-4 bg-gradient-to-br from-blue-100/80 to-blue-50/80 dark:from-blue-900/40 dark:to-blue-800/30 rounded-2xl border-2 border-blue-200/60 dark:border-blue-700/50 shadow-lg group-hover:shadow-xl transition-all duration-300">
+                                  <div className="flex items-center justify-center gap-2 mb-2">
+                                    <div className="w-3 h-3 rounded-full bg-blue-500 shadow-sm"></div>
+                                    <span className="text-sm font-bold text-blue-600 dark:text-blue-400">AYT Net</span>
+                                  </div>
+                                  <div className="text-3xl font-bold text-blue-700 dark:text-blue-300 mb-1">{exam.ayt_net}</div>
+                                  <div className="text-xs text-blue-600/70 dark:text-blue-400/70 font-medium">/ 80 soruluk</div>
                                 </div>
                               )}
                             </div>
                             
-                            <button
-                              onClick={() => deleteExamResultMutation.mutate(exam.id)}
-                              disabled={deleteExamResultMutation.isPending}
-                              className="text-red-400 hover:text-red-600 p-2 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                              title="Deneme sonucunu sil"
-                            >
-                              <Trash2 className="h-5 w-5" />
-                            </button>
+                            <div className="flex flex-col gap-3">
+                              <div className="text-center p-3 bg-gradient-to-br from-purple-100/80 to-purple-50/80 dark:from-purple-900/40 dark:to-purple-800/30 rounded-xl border border-purple-200/60 dark:border-purple-700/50">
+                                <div className="text-lg font-bold text-purple-700 dark:text-purple-300">{totalScore.toFixed(1)}</div>
+                                <div className="text-xs text-purple-600/70 dark:text-purple-400/70 font-medium">Toplam</div>
+                              </div>
+                              
+                              <button
+                                onClick={() => deleteExamResultMutation.mutate(exam.id)}
+                                disabled={deleteExamResultMutation.isPending}
+                                className="p-3 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-all duration-300 hover:scale-110 group/delete"
+                                title="Deneme sonucunu sil"
+                              >
+                                <Trash2 className="h-5 w-5 group-hover/delete:animate-pulse" />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {/* Performance Indicators */}
+                        <div className="flex items-center justify-between pt-4 border-t border-emerald-200/50 dark:border-emerald-700/30">
+                          <div className="flex items-center gap-4">
+                            <div className={`px-3 py-1.5 rounded-full text-sm font-medium ${
+                              totalScore >= 80 ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300' :
+                              totalScore >= 60 ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300' :
+                              totalScore >= 40 ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300' :
+                              'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300'
+                            }`}>
+                              {totalScore >= 80 ? '🎯 Mükemmel' :
+                               totalScore >= 60 ? '👍 İyi' :
+                               totalScore >= 40 ? '📈 Orta' : '💪 Gelişime Açık'}
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              {exam.exam_type} Denemesi
+                            </div>
+                          </div>
+                          
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <Award className="h-4 w-4" />
+                            <span>#{index + 1} Deneme</span>
                           </div>
                         </div>
                       </CardContent>

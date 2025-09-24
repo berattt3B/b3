@@ -216,42 +216,68 @@ export function AdvancedCharts() {
 
   return (
     <div className="space-y-6">
-      {/* Missing Topics Section */}
-      <Card className="bg-gradient-to-br from-red-50/50 via-card to-orange-50/50 dark:from-red-950/30 dark:via-card dark:to-orange-950/30 backdrop-blur-sm border-2 border-red-200/30 dark:border-red-800/30 shadow-2xl">
-        <CardHeader className="bg-gradient-to-r from-red-500/10 to-orange-500/10 rounded-t-lg border-b border-red-200/30">
-          <CardTitle className="text-xl font-bold bg-gradient-to-r from-red-600 to-orange-600 bg-clip-text text-transparent flex items-center gap-2">
-            <AlertTriangle className="h-6 w-6 text-red-500" />
-            🎯 Eksik Olduğum Konular
-          </CardTitle>
-          <p className="text-sm text-red-600/70 dark:text-red-400/70 font-medium">
-            Soru çözümü ve deneme sınavlarından toplanan eksik konu analizi
-          </p>
+      {/* Enhanced Missing Topics Section - Bigger and More Modern */}
+      <Card className="bg-gradient-to-br from-red-50/70 via-white to-orange-50/60 dark:from-red-950/40 dark:via-slate-800/60 dark:to-orange-950/30 backdrop-blur-lg border-2 border-red-200/40 dark:border-red-800/40 shadow-2xl hover:shadow-3xl transition-all duration-700 group relative overflow-hidden">
+        {/* Animated Background Elements */}
+        <div className="absolute top-0 right-0 w-56 h-56 bg-gradient-to-br from-red-500/15 to-orange-500/10 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute -bottom-16 -left-16 w-48 h-48 bg-gradient-to-tr from-orange-500/15 to-red-500/10 rounded-full blur-3xl"></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-40 h-40 bg-gradient-to-br from-red-400/5 to-orange-400/5 rounded-full blur-2xl"></div>
+        
+        <CardHeader className="bg-gradient-to-r from-red-500/15 to-orange-500/15 rounded-t-lg border-b border-red-200/40 pb-8 relative">
+          <div className="flex items-center space-x-4">
+            <div className="p-4 bg-gradient-to-br from-red-500 via-red-600 to-orange-500 rounded-2xl shadow-xl group-hover:shadow-2xl transition-all duration-500 group-hover:scale-110">
+              <AlertTriangle className="h-8 w-8 text-white drop-shadow-lg" />
+            </div>
+            <div>
+              <CardTitle className="text-3xl font-bold bg-gradient-to-r from-red-600 to-orange-600 bg-clip-text text-transparent">
+                🎯 Eksik Olduğum Konular
+              </CardTitle>
+              <p className="text-sm text-red-600/70 dark:text-red-400/70 font-medium mt-2">
+                Soru çözümü ve deneme sınavlarından toplanan eksik konu analizi
+              </p>
+            </div>
+          </div>
         </CardHeader>
-        <CardContent className="pt-6">
-          {missingTopics.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-green-100 to-emerald-100 dark:from-green-900/30 dark:to-emerald-900/30 flex items-center justify-center mx-auto mb-4 shadow-lg">
-                <Target className="h-8 w-8 text-green-500" />
+        <CardContent className="pt-8 pb-8 relative min-h-[400px]">
+          {isLoading ? (
+            <div className="text-center py-16">
+              <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-red-100 to-orange-100 dark:from-red-900/30 dark:to-orange-900/30 rounded-full mb-6 shadow-lg">
+                <div className="animate-spin w-10 h-10 border-4 border-red-200 border-t-red-500 rounded-full"></div>
               </div>
-              <h4 className="text-lg font-semibold text-green-700 dark:text-green-300 mb-2">Harika! Henüz eksik konu yok</h4>
-              <p className="text-sm opacity-75">Soru çözümü ve deneme sınavı ekledikçe eksik konular burada görünecek</p>
+              <h4 className="text-xl font-semibold text-red-700 dark:text-red-300 mb-3">Eksik konular analiz ediliyor...</h4>
+              <div className="flex justify-center space-x-1">
+                <div className="w-3 h-3 rounded-full bg-red-500 animate-bounce"></div>
+                <div className="w-3 h-3 rounded-full bg-orange-500 animate-bounce delay-100"></div>
+                <div className="w-3 h-3 rounded-full bg-red-600 animate-bounce delay-200"></div>
+              </div>
+            </div>
+          ) : missingTopics.length === 0 ? (
+            <div className="text-center py-16 text-muted-foreground">
+              <div className="w-24 h-24 rounded-full bg-gradient-to-br from-green-100 to-emerald-100 dark:from-green-900/30 dark:to-emerald-900/30 flex items-center justify-center mx-auto mb-6 shadow-lg">
+                <Target className="h-12 w-12 text-green-500" />
+              </div>
+              <h4 className="text-2xl font-semibold text-green-700 dark:text-green-300 mb-3">Harika! Henüz eksik konu yok</h4>
+              <p className="text-base opacity-75">Soru çözümü ve deneme sınavı ekledikçe eksik konular burada görünecek</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {missingTopics.slice(0, 12).map((topic, index) => (
-                <div key={index} className="bg-white/60 dark:bg-gray-900/60 rounded-xl p-4 border border-red-200/40 dark:border-red-700/40 hover:shadow-lg transition-all duration-200">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-semibold text-red-700 dark:text-red-300">{topic.subject}</span>
-                    <span className="bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-xs px-2 py-1 rounded-full font-medium">
-                      {topic.frequency} Kere
-                    </span>
-                  </div>
-                  <p className="text-sm text-gray-700 dark:text-gray-300 mb-2 font-medium">{topic.topic}</p>
-                  <div className="flex items-center justify-between text-xs text-muted-foreground">
-                    <span className={`px-2 py-1 rounded-full ${topic.source === 'exam' ? 'bg-blue-100 text-blue-600' : 'bg-purple-100 text-purple-600'}`}>
-                      {topic.source === 'exam' ? 'Deneme' : 'Soru'}
-                    </span>
-                    <span>{new Date(topic.lastSeen).toLocaleDateString('tr-TR')}</span>
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+              {missingTopics.slice(0, 15).map((topic, index) => (
+                <div key={index} className="bg-white/70 dark:bg-gray-900/70 rounded-2xl p-6 border border-red-200/50 dark:border-red-700/50 hover:shadow-2xl transition-all duration-300 hover:scale-105 backdrop-blur-sm relative overflow-hidden group/card">
+                  <div className="absolute inset-0 bg-gradient-to-br from-red-50/50 to-orange-50/30 dark:from-red-950/20 dark:to-orange-950/10 opacity-0 group-hover/card:opacity-100 transition-opacity duration-300"></div>
+                  <div className="relative">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-base font-bold text-red-700 dark:text-red-300">{topic.subject}</span>
+                      <span className="bg-gradient-to-r from-red-100 to-orange-100 dark:from-red-900/40 dark:to-orange-900/40 text-red-600 dark:text-red-400 text-sm px-3 py-1.5 rounded-full font-semibold shadow-md">
+                        {topic.frequency} Kere
+                      </span>
+                    </div>
+                    <p className="text-base text-gray-700 dark:text-gray-300 mb-4 font-medium leading-relaxed">{topic.topic}</p>
+                    <div className="flex items-center justify-between text-sm text-muted-foreground">
+                      <span className={`px-3 py-1.5 rounded-full font-medium shadow-sm ${topic.source === 'exam' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300' : 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300'}`}>
+                        {topic.source === 'exam' ? '🎯 Deneme' : '📝 Soru'}
+                      </span>
+                      <span className="text-xs font-medium">{new Date(topic.lastSeen).toLocaleDateString('tr-TR')}</span>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -260,18 +286,29 @@ export function AdvancedCharts() {
         </CardContent>
       </Card>
 
-      {/* Error Frequency Analysis Section */}
-      <Card className="bg-gradient-to-br from-orange-50/50 via-card to-red-50/50 dark:from-orange-950/30 dark:via-card dark:to-red-950/30 backdrop-blur-sm border-2 border-orange-200/30 dark:border-orange-800/30 shadow-2xl">
-        <CardHeader className="bg-gradient-to-r from-orange-500/10 to-red-500/10 rounded-t-lg border-b border-orange-200/30">
-          <CardTitle className="text-xl font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent flex items-center gap-2">
-            <Brain className="h-6 w-6 text-orange-500" />
-            🔍 Hata Sıklığı Analizi
-          </CardTitle>
-          <p className="text-sm text-orange-600/70 dark:text-orange-400/70 font-medium">
-            Yanlış konu analizi ve kategori bazında hata sıklığı takibi
-          </p>
+      {/* Enhanced Error Frequency Analysis Section - Bigger and More Modern */}
+      <Card className="bg-gradient-to-br from-orange-50/70 via-white to-red-50/60 dark:from-orange-950/40 dark:via-slate-800/60 dark:to-red-950/30 backdrop-blur-lg border-2 border-orange-200/40 dark:border-orange-800/40 shadow-2xl hover:shadow-3xl transition-all duration-700 group relative overflow-hidden">
+        {/* Animated Background Elements */}
+        <div className="absolute top-0 right-0 w-56 h-56 bg-gradient-to-br from-orange-500/15 to-red-500/10 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute -bottom-16 -left-16 w-48 h-48 bg-gradient-to-tr from-red-500/15 to-orange-500/10 rounded-full blur-3xl"></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-40 h-40 bg-gradient-to-br from-orange-400/5 to-red-400/5 rounded-full blur-2xl"></div>
+        
+        <CardHeader className="bg-gradient-to-r from-orange-500/15 to-red-500/15 rounded-t-lg border-b border-orange-200/40 pb-8 relative">
+          <div className="flex items-center space-x-4">
+            <div className="p-4 bg-gradient-to-br from-orange-500 via-red-500 to-orange-600 rounded-2xl shadow-xl group-hover:shadow-2xl transition-all duration-500 group-hover:scale-110">
+              <Brain className="h-8 w-8 text-white drop-shadow-lg" />
+            </div>
+            <div>
+              <CardTitle className="text-3xl font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">
+                🔍 Hata Sıklığı Analizi
+              </CardTitle>
+              <p className="text-sm text-orange-600/70 dark:text-orange-400/70 font-medium mt-2">
+                Yanlış konu analizi ve kategori bazında hata sıklığı takibi
+              </p>
+            </div>
+          </div>
         </CardHeader>
-        <CardContent className="pt-6">
+        <CardContent className="pt-8 pb-8 relative min-h-[400px]">
           {(() => {
             // Filter only question logs that have wrong topics from "Yanlış Konu Analizi"
             const wrongTopicAnalysisLogs = questionLogs.filter(log => 
@@ -280,82 +317,103 @@ export function AdvancedCharts() {
               log.wrong_topics.some(topicItem => typeof topicItem === 'object' && topicItem.topic)
             );
             
+            if (isLoading) {
+              return (
+                <div className="text-center py-16">
+                  <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-orange-100 to-red-100 dark:from-orange-900/30 dark:to-red-900/30 rounded-full mb-6 shadow-lg">
+                    <div className="animate-spin w-10 h-10 border-4 border-orange-200 border-t-orange-500 rounded-full"></div>
+                  </div>
+                  <h4 className="text-xl font-semibold text-orange-700 dark:text-orange-300 mb-3">Hata sıklığı analiz ediliyor...</h4>
+                  <div className="flex justify-center space-x-1">
+                    <div className="w-3 h-3 rounded-full bg-orange-500 animate-bounce"></div>
+                    <div className="w-3 h-3 rounded-full bg-red-500 animate-bounce delay-100"></div>
+                    <div className="w-3 h-3 rounded-full bg-orange-600 animate-bounce delay-200"></div>
+                  </div>
+                </div>
+              );
+            }
+            
             if (wrongTopicAnalysisLogs.length === 0) {
               return (
-                <div className="text-center py-8 text-muted-foreground">
-                  <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-100 to-cyan-100 dark:from-blue-900/30 dark:to-cyan-900/30 flex items-center justify-center mx-auto mb-4 shadow-lg">
-                    <Brain className="h-8 w-8 text-blue-500" />
+                <div className="text-center py-16 text-muted-foreground">
+                  <div className="w-24 h-24 rounded-full bg-gradient-to-br from-blue-100 to-cyan-100 dark:from-blue-900/30 dark:to-cyan-900/30 flex items-center justify-center mx-auto mb-6 shadow-lg">
+                    <Brain className="h-12 w-12 text-blue-500" />
                   </div>
-                  <h4 className="text-lg font-semibold text-blue-700 dark:text-blue-300 mb-2">Henüz hata analizi verisi yok</h4>
-                  <p className="text-sm opacity-75">Soru ekleyip "Yanlış Konu Analizi" bölümünü doldurdukça hata sıklığınız burada görünecek</p>
+                  <h4 className="text-2xl font-semibold text-blue-700 dark:text-blue-300 mb-3">Henüz hata analizi verisi yok</h4>
+                  <p className="text-base opacity-75">Soru ekleyip "Yanlış Konu Analizi" bölümünü doldurdukça hata sıklığınız burada görünecek</p>
                 </div>
               );
             }
             
             return (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {wrongTopicAnalysisLogs.slice(0, 12).map((log, index) => (
-                <div key={index} className="bg-white/60 dark:bg-gray-900/60 rounded-xl p-4 border border-orange-200/40 dark:border-orange-700/40 hover:shadow-lg transition-all duration-200">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-2">
-                      <div className={`w-3 h-3 rounded-full ${
-                        log.exam_type === 'TYT' ? 'bg-blue-500' : 'bg-purple-500'
-                      }`}></div>
-                      <span className="text-sm font-semibold text-orange-700 dark:text-orange-300">
-                        {log.exam_type} {log.subject}
-                      </span>
-                    </div>
-                    <div className="text-xs text-orange-600 dark:text-orange-400 bg-orange-100 dark:bg-orange-900/30 px-2 py-1 rounded-full font-medium">
-                      {log.wrong_count} yanlış
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-2 mb-3">
-                    {log.wrong_topics && log.wrong_topics.slice(0, 3).map((topicItem, topicIndex) => {
-                      const topic = typeof topicItem === 'string' ? topicItem : topicItem.topic;
-                      const difficulty = typeof topicItem === 'object' ? topicItem.difficulty : undefined;
-                      const category = typeof topicItem === 'object' ? topicItem.category : undefined;
-                      
-                      return (
-                        <div key={topicIndex} className="text-sm">
-                          <div className="font-medium text-gray-700 dark:text-gray-300">{topic}</div>
-                          {(difficulty || category) && (
-                            <div className="flex gap-2 mt-1">
-                              {difficulty && (
-                                <span className={`text-xs px-2 py-0.5 rounded-full ${
-                                  difficulty === 'kolay' ? 'bg-green-100 text-green-600' :
-                                  difficulty === 'orta' ? 'bg-yellow-100 text-yellow-600' :
-                                  'bg-red-100 text-red-600'
-                                }`}>
-                                  {difficulty}
-                                </span>
-                              )}
-                              {category && (
-                                <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-600">
-                                  {category}
-                                </span>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                    {log.wrong_topics && log.wrong_topics.length > 3 && (
-                      <div className="text-xs text-gray-500">+{log.wrong_topics.length - 3} konu daha...</div>
-                    )}
-                  </div>
-                  
-                  <div className="flex items-center justify-between text-xs text-muted-foreground pt-2 border-t border-orange-200/40 dark:border-orange-700/40">
-                    <div className="flex items-center gap-1">
-                      <Calendar className="h-3 w-3" />
-                      <span>{new Date(log.study_date).toLocaleDateString('tr-TR')}</span>
-                    </div>
-                    {log.time_spent_minutes && (
-                      <div className="flex items-center gap-1">
-                        <TrendingDown className="h-3 w-3" />
-                        <span>{log.time_spent_minutes} dk</span>
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                {wrongTopicAnalysisLogs.slice(0, 15).map((log, index) => (
+                <div key={index} className="bg-white/70 dark:bg-gray-900/70 rounded-2xl p-6 border border-orange-200/50 dark:border-orange-700/50 hover:shadow-2xl transition-all duration-300 hover:scale-105 backdrop-blur-sm relative overflow-hidden group/card">
+                  <div className="absolute inset-0 bg-gradient-to-br from-orange-50/50 to-red-50/30 dark:from-orange-950/20 dark:to-red-950/10 opacity-0 group-hover/card:opacity-100 transition-opacity duration-300"></div>
+                  <div className="relative">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-4 h-4 rounded-full shadow-md ${
+                          log.exam_type === 'TYT' ? 'bg-blue-500' : 'bg-purple-500'
+                        }`}></div>
+                        <span className="text-base font-bold text-orange-700 dark:text-orange-300">
+                          {log.exam_type} {log.subject}
+                        </span>
                       </div>
-                    )}
+                      <div className="text-sm text-orange-600 dark:text-orange-400 bg-gradient-to-r from-orange-100 to-red-100 dark:from-orange-900/40 dark:to-red-900/40 px-3 py-1.5 rounded-full font-semibold shadow-md">
+                        {log.wrong_count} yanlış
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-3 mb-4">
+                      {log.wrong_topics && log.wrong_topics.slice(0, 3).map((topicItem, topicIndex) => {
+                        const topic = typeof topicItem === 'string' ? topicItem : topicItem.topic;
+                        const difficulty = typeof topicItem === 'object' ? topicItem.difficulty : undefined;
+                        const category = typeof topicItem === 'object' ? topicItem.category : undefined;
+                        
+                        return (
+                          <div key={topicIndex} className="text-sm bg-white/50 dark:bg-gray-800/50 p-3 rounded-xl">
+                            <div className="font-semibold text-gray-700 dark:text-gray-300 mb-2">{topic}</div>
+                            {(difficulty || category) && (
+                              <div className="flex gap-2 flex-wrap">
+                                {difficulty && (
+                                  <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                                    difficulty === 'kolay' ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300' :
+                                    difficulty === 'orta' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300' :
+                                    'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300'
+                                  }`}>
+                                    📊 {difficulty}
+                                  </span>
+                                )}
+                                {category && (
+                                  <span className="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 font-medium">
+                                    🔍 {category}
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                      {log.wrong_topics && log.wrong_topics.length > 3 && (
+                        <div className="text-sm text-gray-500 text-center bg-white/30 dark:bg-gray-800/30 p-2 rounded-lg">
+                          +{log.wrong_topics.length - 3} konu daha...
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="flex items-center justify-between text-sm text-muted-foreground pt-3 border-t border-orange-200/40 dark:border-orange-700/40">
+                      <div className="flex items-center gap-2">
+                        <Calendar className="h-4 w-4" />
+                        <span className="font-medium">{new Date(log.study_date).toLocaleDateString('tr-TR')}</span>
+                      </div>
+                      {log.time_spent_minutes && (
+                        <div className="flex items-center gap-2">
+                          <TrendingDown className="h-4 w-4" />
+                          <span className="font-medium">{log.time_spent_minutes} dk</span>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))}

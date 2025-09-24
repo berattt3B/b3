@@ -298,7 +298,7 @@ export function DashboardSummaryCards() {
                     <div className="text-2xl font-black text-green-600 dark:text-green-400 mb-2" data-testid="text-total-correct">
                       {questionStats.totalCorrect.toLocaleString('tr-TR')}
                     </div>
-                    <div className="text-sm font-medium text-green-700 dark:text-green-300">Doğru</div>
+                    <div className="text-sm font-medium text-green-700 dark:text-green-300">Toplam Doğru</div>
                     <div className="w-full bg-green-100 dark:bg-green-900/30 rounded-full h-2 mt-2">
                       <div 
                         className="bg-gradient-to-r from-green-500 to-green-600 h-2 rounded-full transition-all duration-1000"
@@ -314,7 +314,7 @@ export function DashboardSummaryCards() {
                     <div className="text-2xl font-black text-red-600 dark:text-red-400 mb-2" data-testid="text-total-wrong">
                       {questionStats.totalWrong.toLocaleString('tr-TR')}
                     </div>
-                    <div className="text-sm font-medium text-red-700 dark:text-red-300">Yanlış</div>
+                    <div className="text-sm font-medium text-red-700 dark:text-red-300">Toplam Yanlış</div>
                     <div className="w-full bg-red-100 dark:bg-red-900/30 rounded-full h-2 mt-2">
                       <div 
                         className="bg-gradient-to-r from-red-500 to-red-600 h-2 rounded-full transition-all duration-1000"
