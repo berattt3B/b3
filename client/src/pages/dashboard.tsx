@@ -254,12 +254,12 @@ export default function Dashboard() {
     
     // Start from January 1st of current year
     const startDate = new Date(currentYear, 0, 1); // January 1st
-    // End at today (current date)
-    const actualEndDate = new Date(today); // Use today as end date
+    // End at today (current date) - ensure we include today
+    const actualEndDate = new Date(currentYear, today.getMonth(), today.getDate(), 23, 59, 59, 999); // End of today
     
-    // Generate data from January 1st to end date
+    // Generate data from January 1st to end date (inclusive)
     const currentDate = new Date(startDate);
-    while (currentDate <= actualEndDate) {
+    while (currentDate.getTime() <= actualEndDate.getTime()) {
       const dateStr = currentDate.toISOString().split('T')[0];
       
       // Calculate activity intensity for this day
@@ -272,14 +272,19 @@ export default function Dashboard() {
       
       const studyIntensity = Math.min((dayQuestions.length * 2 + dayTasks.length) / 10, 1);
       
-      // Check if this is today
-      const isToday = dateStr === today.toISOString().split('T')[0];
+      // Check if this is today - Fix timezone issues
+      const today_fixed = new Date();
+      today_fixed.setHours(0, 0, 0, 0);
+      const currentDate_fixed = new Date(currentDate);
+      currentDate_fixed.setHours(0, 0, 0, 0);
+      const isToday = currentDate_fixed.getTime() === today_fixed.getTime();
       
       data.push({
         date: dateStr,
         day: currentDate.getDate(),
         month: currentDate.getMonth(),
         dayOfWeek: currentDate.getDay(), // 0 = Sunday, 1 = Monday, etc.
+        dayOfWeekISO: currentDate.getDay() === 0 ? 7 : currentDate.getDay(), // 1 = Monday, 7 = Sunday
         intensity: studyIntensity,
         count: dayQuestions.length + dayTasks.length,
         questionCount: dayQuestions.length,
@@ -489,28 +494,61 @@ export default function Dashboard() {
               <div className="flex justify-center">
                 <div className="inline-block min-w-0">
                   {/* Month labels */}
-                  <div className="flex mb-2">
-                  <div className="w-8"></div> {/* Space for day labels */}
-                  {(() => {
-                    const monthNames = [
-                      'Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran',
-                      'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'
-                    ];
-                    const currentMonth = new Date().getMonth();
-                    const months = [];
-                    
-                    // Generate all months from January (0) to September (8)
-                    for (let monthIndex = 0; monthIndex <= 8; monthIndex++) {
-                      const isCurrentMonth = monthIndex === currentMonth;
-                      months.push(
-                        <div key={`month-${monthIndex}`} className={`text-xs font-medium px-2 ${isCurrentMonth ? 'text-purple-700 dark:text-purple-300 font-bold' : 'text-muted-foreground'}`} style={{ minWidth: '70px', textAlign: 'center' }}>
-                          {monthNames[monthIndex]} {isCurrentMonth ? '⭐' : ''}
-                        </div>
-                      );
-                    }
-                    return months;
-                  })()}
-                </div>
+                  <div className="flex mb-2 relative">
+                    <div className="w-8"></div> {/* Space for day labels */}
+                    <div className="flex gap-1 relative" style={{ width: `${heatmapWeeks.length * 21}px` }}>
+                      {(() => {
+                        const monthNames = [
+                          'Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran',
+                          'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'
+                        ];
+                        const currentMonth = new Date().getMonth();
+                        const monthLabels = [];
+                        
+                        // Calculate which weeks each month spans
+                        const monthWeekMap = new Map();
+                        
+                        heatmapWeeks.forEach((week, weekIndex) => {
+                          week.forEach(day => {
+                            if (day && day.month !== undefined) {
+                              const monthKey = day.month;
+                              if (!monthWeekMap.has(monthKey)) {
+                                monthWeekMap.set(monthKey, { start: weekIndex, end: weekIndex });
+                              } else {
+                                monthWeekMap.get(monthKey).end = weekIndex;
+                              }
+                            }
+                          });
+                        });
+                        
+                        // Generate centered month labels
+                        monthWeekMap.forEach((range, monthIndex) => {
+                          const startWeek = range.start;
+                          const endWeek = range.end;
+                          const centerWeek = Math.floor((startWeek + endWeek) / 2);
+                          const leftPosition = centerWeek * 21; // 20px width + 1px gap
+                          const isCurrentMonth = monthIndex === currentMonth;
+                          
+                          monthLabels.push(
+                            <div 
+                              key={`month-${monthIndex}`} 
+                              className={`absolute text-xs font-medium ${isCurrentMonth ? 'text-purple-700 dark:text-purple-300 font-bold' : 'text-muted-foreground'}`}
+                              style={{ 
+                                left: `${leftPosition}px`, 
+                                transform: 'translateX(-50%)',
+                                minWidth: 'fit-content',
+                                textAlign: 'center'
+                              }}
+                            >
+                              {monthNames[monthIndex]} {isCurrentMonth ? '⭐' : ''}
+                            </div>
+                          );
+                        });
+                        
+                        return monthLabels;
+                      })()}
+                    </div>
+                  </div>
                 
                 {/* Heatmap grid */}
                 <div className="flex">
