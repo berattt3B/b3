@@ -493,9 +493,9 @@ export default function Dashboard() {
               <div className="flex justify-center">
                 <div className="inline-block min-w-0">
                   {/* Month labels */}
-                  <div className="flex mb-2 relative">
-                    <div className="w-8"></div> {/* Space for day labels */}
-                    <div className="flex gap-1 relative" style={{ width: `${heatmapWeeks.length * 21}px` }}>
+                  <div className="flex mb-4 relative">
+                    <div className="w-12"></div> {/* Increased space for day labels */}
+                    <div className="flex gap-1 relative" style={{ width: `${heatmapWeeks.length * 21}px`, height: '24px' }}>
                       {(() => {
                         const monthNames = [
                           'Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran',
@@ -527,21 +527,30 @@ export default function Dashboard() {
                           const centerWeek = Math.floor((startWeek + endWeek) / 2);
                           const leftPosition = centerWeek * 21; // 20px width + 1px gap
                           const isCurrentMonth = monthIndex === currentMonth;
+                          const weekSpan = endWeek - startWeek + 1;
                           
-                          monthLabels.push(
-                            <div 
-                              key={`month-${monthIndex}`} 
-                              className={`absolute text-xs font-medium ${isCurrentMonth ? 'text-purple-700 dark:text-purple-300 font-bold' : 'text-muted-foreground'}`}
-                              style={{ 
-                                left: `${leftPosition}px`, 
-                                transform: 'translateX(-50%)',
-                                minWidth: 'fit-content',
-                                textAlign: 'center'
-                              }}
-                            >
-                              {monthNames[monthIndex]} {isCurrentMonth ? '⭐' : ''}
-                            </div>
-                          );
+                          // Only show month labels if they have enough space (at least 2 weeks)
+                          if (weekSpan >= 2) {
+                            monthLabels.push(
+                              <div 
+                                key={`month-${monthIndex}`} 
+                                className={`absolute text-xs font-semibold bg-white/90 dark:bg-gray-800/90 px-2 py-1 rounded-full border shadow-sm ${
+                                  isCurrentMonth 
+                                    ? 'text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-900/50 border-purple-300 dark:border-purple-600' 
+                                    : 'text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-600'
+                                }`}
+                                style={{ 
+                                  left: `${leftPosition}px`, 
+                                  transform: 'translateX(-50%)',
+                                  minWidth: 'fit-content',
+                                  textAlign: 'center',
+                                  top: '2px'
+                                }}
+                              >
+                                {monthNames[monthIndex]} {isCurrentMonth ? '⭐' : ''}
+                              </div>
+                            );
+                          }
                         });
                         
                         return monthLabels;
@@ -552,14 +561,14 @@ export default function Dashboard() {
                 {/* Heatmap grid */}
                 <div className="flex">
                   {/* Day labels */}
-                  <div className="flex flex-col justify-between mr-3" style={{ height: '147px' }}>
-                    <div className="text-xs text-muted-foreground h-5 flex items-center">Pzt</div>
+                  <div className="flex flex-col justify-between mr-4" style={{ height: '147px', width: '48px' }}>
+                    <div className="text-xs text-muted-foreground h-5 flex items-center justify-end pr-2 font-medium">Pzt</div>
                     <div className="text-xs text-transparent h-5">Sal</div>
-                    <div className="text-xs text-muted-foreground h-5 flex items-center">Çar</div>
+                    <div className="text-xs text-muted-foreground h-5 flex items-center justify-end pr-2 font-medium">Çar</div>
                     <div className="text-xs text-transparent h-5">Per</div>
-                    <div className="text-xs text-muted-foreground h-5 flex items-center">Cum</div>
+                    <div className="text-xs text-muted-foreground h-5 flex items-center justify-end pr-2 font-medium">Cum</div>
                     <div className="text-xs text-transparent h-5">Cmt</div>
-                    <div className="text-xs text-muted-foreground h-5 flex items-center">Paz</div>
+                    <div className="text-xs text-muted-foreground h-5 flex items-center justify-end pr-2 font-medium">Paz</div>
                   </div>
                   
                   {/* Weeks grid */}
