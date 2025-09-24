@@ -28,6 +28,8 @@ export function AdvancedCharts() {
   const [priorityViewMode, setPriorityViewMode] = useState<'chart' | 'text'>('text');
   // State for Error Frequency Analysis view toggle
   const [errorViewMode, setErrorViewMode] = useState<'chart' | 'text'>('text');
+  // State for Bottom Charts toggle - NEW!
+  const [bottomChartMode, setBottomChartMode] = useState<'net' | 'subject'>('net');
   // State for date filtering
   const [useCustomDates, setUseCustomDates] = useState(false);
   const [startDate, setStartDate] = useState(() => {
@@ -260,8 +262,8 @@ export function AdvancedCharts() {
 
   return (
     <div className="space-y-8 p-6">
-      {/* Enhanced First Row - Priority Topics and Error Frequency */}
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+      {/* NEW Layout: Priority Topics and Error Frequency stacked vertically */}
+      <div className="space-y-8">
         {/* Enhanced Priority Topics Analysis with Toggle */}
         <div className="bg-gradient-to-br from-red-50/60 via-card to-orange-50/40 dark:from-red-950/30 dark:via-card dark:to-orange-950/25 rounded-2xl border-2 border-red-200/40 dark:border-red-800/40 p-8 relative overflow-hidden shadow-2xl backdrop-blur-sm">
           <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-red-500/10 to-orange-500/10 rounded-full blur-3xl animate-pulse"></div>
@@ -630,49 +632,88 @@ export function AdvancedCharts() {
         </div>
       </div>
 
-      {/* Enhanced Second Row - Net Progress and Subject Distribution */}
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-        {/* Enhanced Net Progress Chart */}
-        <div className="bg-gradient-to-br from-green-50/60 via-card to-teal-50/40 dark:from-green-950/30 dark:via-card dark:to-teal-950/25 rounded-2xl border-2 border-green-200/40 dark:border-green-800/40 p-8 relative overflow-hidden shadow-2xl backdrop-blur-sm">
-          <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-green-500/10 to-teal-500/10 rounded-full blur-3xl animate-pulse"></div>
-          <div className="absolute -bottom-8 -left-8 w-32 h-32 bg-gradient-to-tr from-teal-500/10 to-green-500/10 rounded-full blur-2xl"></div>
-          <div className="relative">
-            <div className="flex items-center justify-between mb-8">
-              <div className="flex items-center space-x-3">
-                <div className="p-3 bg-gradient-to-br from-green-500 via-teal-500 to-green-600 rounded-xl shadow-lg">
-                  <TrendingUp className="h-6 w-6 text-white drop-shadow-lg" />
-                </div>
-                <div>
-                  <h3 className="text-2xl font-bold bg-gradient-to-r from-green-600 via-teal-600 to-green-700 bg-clip-text text-transparent">
-                    📈 Net Gelişim Grafiği
-                  </h3>
-                  <p className="text-sm text-green-600/70 dark:text-green-400/70 font-medium">
-                    Deneme performans ilerlemesi
-                  </p>
-                </div>
+      {/* Enhanced Bottom Charts - Single Column with Toggle */}
+      <div className="bg-gradient-to-br from-indigo-50/60 via-card to-purple-50/40 dark:from-indigo-950/30 dark:via-card dark:to-purple-950/25 rounded-2xl border-2 border-indigo-200/40 dark:border-indigo-800/40 p-8 relative overflow-hidden shadow-2xl backdrop-blur-sm">
+        <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-indigo-500/10 to-purple-500/10 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute -bottom-8 -left-8 w-32 h-32 bg-gradient-to-tr from-purple-500/10 to-indigo-500/10 rounded-full blur-2xl"></div>
+        <div className="relative">
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center space-x-3">
+              <div className="p-3 bg-gradient-to-br from-indigo-500 via-purple-500 to-indigo-600 rounded-xl shadow-lg">
+                <BarChart3 className="h-6 w-6 text-white drop-shadow-lg" />
               </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant={useCustomDates ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setUseCustomDates(!useCustomDates)}
-                  className={`text-xs px-3 py-1 h-auto font-medium transition-all duration-200 ${
-                    useCustomDates
-                      ? 'bg-gradient-to-r from-green-500 to-teal-500 text-white shadow-lg'
-                      : 'hover:bg-green-50 dark:hover:bg-green-900/30 text-green-700 dark:text-green-300 border-green-200 dark:border-green-700'
-                  }`}
-                  data-testid="button-chart-dates"
-                >
-                  <Calendar className="h-3 w-3 mr-1" />
-                  Tarih Seç
-                </Button>
-                {!useCustomDates && (
-                  <div className="text-xs text-muted-foreground bg-green-100/60 dark:bg-green-900/30 px-4 py-2 rounded-full border border-green-200/50 dark:border-green-700/50">
-                    Son {lineChartData.length} deneme
-                  </div>
-                )}
+              <div>
+                <h3 className="text-2xl font-bold bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-700 bg-clip-text text-transparent">
+                  📊 Gelişim & Dağılım Analizi
+                </h3>
+                <p className="text-sm text-indigo-600/70 dark:text-indigo-400/70 font-medium">
+                  {bottomChartMode === 'net' ? 'Deneme performans ilerlemesi' : 'Ders başarı dağılımı'}
+                </p>
               </div>
             </div>
+            
+            <div className="flex items-center gap-4">
+              {/* Chart Type Toggle Buttons */}
+              <div className="flex bg-indigo-100/50 dark:bg-indigo-900/30 rounded-xl p-1 border border-indigo-200/50 dark:border-indigo-700/50">
+                <Button
+                  variant={bottomChartMode === 'net' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setBottomChartMode('net')}
+                  className={`px-3 py-2 rounded-lg transition-all duration-300 ${
+                    bottomChartMode === 'net' 
+                      ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow-lg' 
+                      : 'text-indigo-600 dark:text-indigo-400 hover:bg-indigo-200/50 dark:hover:bg-indigo-800/50'
+                  }`}
+                  data-testid="button-chart-net"
+                >
+                  <TrendingUp className="h-4 w-4 mr-2" />
+                  📈 Net Gelişim
+                </Button>
+                <Button
+                  variant={bottomChartMode === 'subject' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setBottomChartMode('subject')}
+                  className={`px-3 py-2 rounded-lg transition-all duration-300 ${
+                    bottomChartMode === 'subject' 
+                      ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow-lg' 
+                      : 'text-indigo-600 dark:text-indigo-400 hover:bg-indigo-200/50 dark:hover:bg-indigo-800/50'
+                  }`}
+                  data-testid="button-chart-subject"
+                >
+                  <Target className="h-4 w-4 mr-2" />
+                  🎯 Ders Dağılımı
+                </Button>
+              </div>
+              
+              {bottomChartMode === 'net' && (
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant={useCustomDates ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setUseCustomDates(!useCustomDates)}
+                    className={`text-xs px-3 py-1 h-auto font-medium transition-all duration-200 ${
+                      useCustomDates
+                        ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow-lg'
+                        : 'hover:bg-indigo-50 dark:hover:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-700'
+                    }`}
+                    data-testid="button-chart-dates"
+                  >
+                    <Calendar className="h-3 w-3 mr-1" />
+                    Tarih Seç
+                  </Button>
+                  {!useCustomDates && (
+                    <div className="text-xs text-muted-foreground bg-indigo-100/60 dark:bg-indigo-900/30 px-4 py-2 rounded-full border border-indigo-200/50 dark:border-indigo-700/50">
+                      Son {netProgressionData.length} deneme
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+          
+          {/* Conditional Content based on chart mode */}
+          {bottomChartMode === 'net' ? (
+            <div>
 
             {/* Custom Date Range Inputs */}
             {useCustomDates && (
@@ -836,32 +877,10 @@ export function AdvancedCharts() {
                 </ResponsiveContainer>
               </div>
             )}
-          </div>
-        </div>
-
-        {/* Enhanced Subject Distribution Radar Chart */}
-        <div className="bg-gradient-to-br from-purple-50/60 via-card to-indigo-50/40 dark:from-purple-950/30 dark:via-card dark:to-indigo-950/25 rounded-2xl border-2 border-purple-200/40 dark:border-purple-800/40 p-8 relative overflow-hidden shadow-2xl backdrop-blur-sm">
-          <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-purple-500/10 to-indigo-500/10 rounded-full blur-3xl animate-pulse"></div>
-          <div className="absolute -bottom-8 -left-8 w-32 h-32 bg-gradient-to-tr from-indigo-500/10 to-purple-500/10 rounded-full blur-2xl"></div>
-          <div className="relative">
-            <div className="flex items-center justify-between mb-8">
-              <div className="flex items-center space-x-3">
-                <div className="p-3 bg-gradient-to-br from-purple-500 via-indigo-500 to-purple-600 rounded-xl shadow-lg">
-                  <Target className="h-6 w-6 text-white drop-shadow-lg" />
-                </div>
-                <div>
-                  <h3 className="text-2xl font-bold bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-700 bg-clip-text text-transparent">
-                    🎯 Ders Dağılım Analizi
-                  </h3>
-                  <p className="text-sm text-purple-600/70 dark:text-purple-400/70 font-medium">
-                    Derslere göre performans dağılımı
-                  </p>
-                </div>
-              </div>
-              <div className="text-xs text-muted-foreground bg-purple-100/60 dark:bg-purple-900/30 px-4 py-2 rounded-full border border-purple-200/50 dark:border-purple-700/50">
-                {radarChartData.length > 0 ? `${radarChartData.length} ders` : 'Veri yok'}
-              </div>
             </div>
+          ) : (
+            /* Subject Distribution Chart */
+            <div>
             
             {radarChartData.length === 0 ? (
               <div className="text-center py-20 text-muted-foreground">
@@ -937,7 +956,8 @@ export function AdvancedCharts() {
                 </ResponsiveContainer>
               </div>
             )}
-          </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
