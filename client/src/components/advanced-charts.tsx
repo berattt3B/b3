@@ -791,25 +791,25 @@ export function AdvancedCharts() {
                 </div>
                 <div>
                   <h3 className="text-2xl font-bold bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-700 bg-clip-text text-transparent">
-                    🎯 Ders Net Dağılımı
+                    🎯 Deneme Sonuçları
                   </h3>
                   <p className="text-sm text-purple-600/70 dark:text-purple-400/70 font-medium">
-                    Ders bazında performans analizi
+                    Deneme bazında performans analizi
                   </p>
                 </div>
               </div>
               <div className="text-xs text-muted-foreground bg-purple-100/60 dark:bg-purple-900/30 px-4 py-2 rounded-full border border-purple-200/50 dark:border-purple-700/50">
-                {examResults.length > 0 && radarChartData.length > 0 ? 'Son deneme' : 'Veri yok'}
+                {examResults.length > 0 ? `${examResults.length} deneme` : 'Veri yok'}
               </div>
             </div>
             
-            {radarChartData.length === 0 ? (
+            {examResults.length === 0 ? (
               <div className="text-center py-20 text-muted-foreground">
                 <div className="w-20 h-20 rounded-full bg-gradient-to-br from-purple-100 to-indigo-100 dark:from-purple-900/30 dark:to-indigo-900/30 flex items-center justify-center mx-auto mb-6 shadow-lg">
                   <Target className="h-10 w-10 text-purple-500" />
                 </div>
-                <h4 className="text-lg font-semibold text-purple-700 dark:text-purple-300 mb-2">Ders net verisi bulunmuyor</h4>
-                <p className="text-sm opacity-75 mb-4">Deneme ekleyip ders netlerini girin</p>
+                <h4 className="text-lg font-semibold text-purple-700 dark:text-purple-300 mb-2">Deneme sonucu bulunmuyor</h4>
+                <p className="text-sm opacity-75 mb-4">Deneme ekleyerek performansınızı analiz edin</p>
                 <div className="flex justify-center space-x-1">
                   <div className="w-2 h-2 rounded-full bg-purple-500 animate-bounce"></div>
                   <div className="w-2 h-2 rounded-full bg-indigo-500 animate-bounce delay-100"></div>
@@ -818,109 +818,149 @@ export function AdvancedCharts() {
               </div>
             ) : (
               <div className="space-y-6">
-                {/* Hexagonal Subject Distribution Grid */}
-                <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                  {radarChartData.map((subjectData, index) => subjectData ? (
-                    <div
-                      key={subjectData.subject}
-                      className="relative bg-gradient-to-br from-white to-purple-50/30 dark:from-slate-800/60 dark:to-purple-950/20 rounded-2xl border border-purple-200/50 dark:border-purple-700/40 p-4 hover:shadow-lg transition-all duration-300 hover:scale-105"
-                    >
-                      {/* Subject Header */}
-                      <div className="flex items-center justify-center mb-3">
-                        <div className="text-center">
-                          <span className="text-2xl mb-1 block">{subjectData.subjectEmoji}</span>
-                          <h4 className="text-sm font-bold text-purple-700 dark:text-purple-300">
-                            {subjectData.subject}
-                          </h4>
-                        </div>
-                      </div>
+                {/* Exam Result Boxes Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {examResults
+                    .sort((a, b) => new Date(b.exam_date).getTime() - new Date(a.exam_date).getTime())
+                    .slice(0, 6)
+                    .map((exam, index) => {
+                      const tytNet = exam.tyt_net ? parseFloat(exam.tyt_net.toString()) : 0;
+                      const aytNet = exam.ayt_net ? parseFloat(exam.ayt_net.toString()) : 0;
+                      const totalNet = tytNet + aytNet;
+                      const examDate = new Date(exam.exam_date).toLocaleDateString('tr-TR', { 
+                        day: 'numeric', 
+                        month: 'short' 
+                      });
                       
-                      {/* Hexagonal Progress Ring */}
-                      <div className="flex justify-center mb-4">
-                        <div className="relative w-20 h-20">
-                          <svg className="w-20 h-20 transform -rotate-90" viewBox="0 0 80 80">
-                            {/* Background ring */}
-                            <circle
-                              cx="40"
-                              cy="40"
-                              r="32"
-                              stroke="currentColor"
-                              strokeWidth="6"
-                              fill="transparent"
-                              className="text-purple-200 dark:text-purple-800"
-                            />
-                            {/* Progress ring */}
-                            <circle
-                              cx="40"
-                              cy="40"
-                              r="32"
-                              stroke="url(#hexProgressGradient)"
-                              strokeWidth="6"
-                              fill="transparent"
-                              strokeDasharray={`${2 * Math.PI * 32}`}
-                              strokeDashoffset={`${2 * Math.PI * 32 * (1 - subjectData.successRate / 100)}`}
-                              strokeLinecap="round"
-                              className="transition-all duration-1000 ease-out"
-                            />
-                          </svg>
-                          <div className="absolute inset-0 flex items-center justify-center">
-                            <span className="text-lg font-bold text-purple-700 dark:text-purple-300">
-                              {subjectData.net}
-                            </span>
+                      // Determine exam performance color
+                      const getPerformanceColor = (net: number, isAyt: boolean = false) => {
+                        const threshold = isAyt ? 40 : 80;
+                        if (net >= threshold * 0.9) return 'text-green-600 dark:text-green-400';
+                        if (net >= threshold * 0.7) return 'text-yellow-600 dark:text-yellow-400';
+                        if (net >= threshold * 0.5) return 'text-orange-600 dark:text-orange-400';
+                        return 'text-red-600 dark:text-red-400';
+                      };
+                      
+                      const getPerformanceBg = (net: number, isAyt: boolean = false) => {
+                        const threshold = isAyt ? 40 : 80;
+                        if (net >= threshold * 0.9) return 'from-green-50 to-green-100/50 dark:from-green-950/30 dark:to-green-900/20 border-green-200 dark:border-green-700/50';
+                        if (net >= threshold * 0.7) return 'from-yellow-50 to-yellow-100/50 dark:from-yellow-950/30 dark:to-yellow-900/20 border-yellow-200 dark:border-yellow-700/50';
+                        if (net >= threshold * 0.5) return 'from-orange-50 to-orange-100/50 dark:from-orange-950/30 dark:to-orange-900/20 border-orange-200 dark:border-orange-700/50';
+                        return 'from-red-50 to-red-100/50 dark:from-red-950/30 dark:to-red-900/20 border-red-200 dark:border-red-700/50';
+                      };
+                      
+                      return (
+                        <div
+                          key={exam.id}
+                          className={`relative bg-gradient-to-br ${getPerformanceBg(totalNet)} rounded-2xl border p-6 hover:shadow-lg transition-all duration-300 hover:scale-105`}
+                          data-testid={`exam-result-box-${index}`}
+                        >
+                          {/* Exam Header */}
+                          <div className="flex items-start justify-between mb-4">
+                            <div className="flex-1">
+                              <h4 className="text-sm font-bold text-purple-700 dark:text-purple-300 mb-1">
+                                {exam.exam_name.length > 20 ? `${exam.exam_name.substring(0, 20)}...` : exam.exam_name}
+                              </h4>
+                              <p className="text-xs text-muted-foreground">{examDate}</p>
+                            </div>
+                            <div className="text-right">
+                              <span className="text-xs px-2 py-1 bg-purple-100 dark:bg-purple-900/30 rounded-full text-purple-600 dark:text-purple-400">
+                                {exam.exam_type}
+                              </span>
+                            </div>
+                          </div>
+                          
+                          {/* Net Scores */}
+                          <div className="space-y-3">
+                            {/* TYT Net */}
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center space-x-2">
+                                <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+                                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">TYT</span>
+                              </div>
+                              <div className="text-right">
+                                <span className={`text-lg font-bold ${getPerformanceColor(tytNet)}`}>
+                                  {tytNet.toFixed(1)}
+                                </span>
+                                <span className="text-xs text-muted-foreground ml-1">/120</span>
+                              </div>
+                            </div>
+                            
+                            {/* AYT Net (if available) */}
+                            {aytNet > 0 && (
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center space-x-2">
+                                  <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">AYT</span>
+                                </div>
+                                <div className="text-right">
+                                  <span className={`text-lg font-bold ${getPerformanceColor(aytNet, true)}`}>
+                                    {aytNet.toFixed(1)}
+                                  </span>
+                                  <span className="text-xs text-muted-foreground ml-1">/80</span>
+                                </div>
+                              </div>
+                            )}
+                            
+                            {/* Total Net */}
+                            <div className="border-t border-purple-200/50 dark:border-purple-700/50 pt-2">
+                              <div className="flex items-center justify-between">
+                                <span className="text-sm font-semibold text-purple-700 dark:text-purple-300">Toplam</span>
+                                <span className="text-xl font-bold text-purple-700 dark:text-purple-300">
+                                  {totalNet.toFixed(1)}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          {/* Performance Indicator */}
+                          <div className="mt-4">
+                            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                              <div 
+                                className="h-2 rounded-full bg-gradient-to-r from-purple-500 to-indigo-500 transition-all duration-500"
+                                style={{ width: `${Math.min((totalNet / 200) * 100, 100)}%` }}
+                              ></div>
+                            </div>
+                            <div className="flex justify-between items-center mt-1">
+                              <span className="text-xs text-muted-foreground">0</span>
+                              <span className="text-xs text-muted-foreground">200</span>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                      
-                      {/* Stats */}
-                      <div className="space-y-2">
-                        <div className="flex justify-between items-center text-xs">
-                          <span className="text-green-600 dark:text-green-400 font-medium">
-                            ✓ Doğru: {subjectData.correct}
-                          </span>
-                          <span className="text-red-600 dark:text-red-400 font-medium">
-                            ✗ Yanlış: {subjectData.wrong}
-                          </span>
-                        </div>
-                        <div className="flex justify-between items-center text-xs">
-                          <span className="text-yellow-600 dark:text-yellow-400 font-medium">
-                            ○ Boş: {subjectData.blank}
-                          </span>
-                          <span className="text-purple-600 dark:text-purple-400 font-medium">
-                            %{subjectData.accuracy} Doğruluk
-                          </span>
-                        </div>
-                        <div className="text-center text-xs text-muted-foreground pt-1 border-t border-purple-200/50 dark:border-purple-700/50">
-                          Net: {subjectData.net} / {subjectData.totalQuestions}
-                        </div>
-                      </div>
-                    </div>
-                  ) : null)}
+                      );
+                    })}
                 </div>
                 
                 {/* Summary Stats */}
                 <div className="grid grid-cols-3 gap-4 mt-6">
-                  <div className="text-center p-4 bg-gradient-to-br from-green-50 to-green-100/50 dark:from-green-950/30 dark:to-green-900/20 rounded-xl border border-green-200 dark:border-green-700/50">
-                    <div className="text-2xl font-bold text-green-700 dark:text-green-300">
-                      {radarChartData.reduce((sum, s) => sum + (s?.correct || 0), 0)}
+                  <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-blue-100/50 dark:from-blue-950/30 dark:to-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-700/50">
+                    <div className="text-2xl font-bold text-blue-700 dark:text-blue-300">
+                      {examResults.length > 0 ? 
+                        (examResults.reduce((sum, exam) => sum + (parseFloat(exam.tyt_net?.toString() || '0')), 0) / examResults.length).toFixed(1) : 
+                        '0.0'
+                      }
                     </div>
-                    <div className="text-xs font-medium text-green-600 dark:text-green-400">
-                      Toplam Doğru
+                    <div className="text-xs font-medium text-blue-600 dark:text-blue-400">
+                      Ortalama TYT
                     </div>
                   </div>
-                  <div className="text-center p-4 bg-gradient-to-br from-red-50 to-red-100/50 dark:from-red-950/30 dark:to-red-900/20 rounded-xl border border-red-200 dark:border-red-700/50">
-                    <div className="text-2xl font-bold text-red-700 dark:text-red-300">
-                      {radarChartData.reduce((sum, s) => sum + (s?.wrong || 0), 0)}
+                  <div className="text-center p-4 bg-gradient-to-br from-green-50 to-green-100/50 dark:from-green-950/30 dark:to-green-900/20 rounded-xl border border-green-200 dark:border-green-700/50">
+                    <div className="text-2xl font-bold text-green-700 dark:text-green-300">
+                      {examResults.length > 0 ? 
+                        (examResults.reduce((sum, exam) => sum + (parseFloat(exam.ayt_net?.toString() || '0')), 0) / examResults.filter(e => parseFloat(e.ayt_net?.toString() || '0') > 0).length || 1).toFixed(1) : 
+                        '0.0'
+                      }
                     </div>
-                    <div className="text-xs font-medium text-red-600 dark:text-red-400">
-                      Toplam Yanlış
+                    <div className="text-xs font-medium text-green-600 dark:text-green-400">
+                      Ortalama AYT
                     </div>
                   </div>
                   <div className="text-center p-4 bg-gradient-to-br from-purple-50 to-purple-100/50 dark:from-purple-950/30 dark:to-purple-900/20 rounded-xl border border-purple-200 dark:border-purple-700/50">
                     <div className="text-2xl font-bold text-purple-700 dark:text-purple-300">
-                      {radarChartData.reduce((sum, s) => sum + (s ? parseFloat(s.net.toString()) : 0), 0).toFixed(1)}
+                      {examResults.length}
                     </div>
                     <div className="text-xs font-medium text-purple-600 dark:text-purple-400">
-                      Toplam Net
+                      Toplam Deneme
                     </div>
                   </div>
                 </div>
