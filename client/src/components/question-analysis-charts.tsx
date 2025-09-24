@@ -1,12 +1,20 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Line, ComposedChart } from "recharts";
-import { BookOpen } from "lucide-react";
+import { BookOpen, Calendar, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { QuestionLog } from "@shared/schema";
 
 export function QuestionAnalysisCharts() {
   const [viewMode, setViewMode] = useState<'daily' | 'weekly'>('daily');
+  const [useCustomDates, setUseCustomDates] = useState(false);
+  const [startDate, setStartDate] = useState(() => {
+    const date = new Date();
+    date.setDate(date.getDate() - 13);
+    return date.toISOString().split('T')[0];
+  });
+  const [endDate, setEndDate] = useState(() => new Date().toISOString().split('T')[0]);
   
   const { data: questionLogs = [] } = useQuery<QuestionLog[]>({
     queryKey: ["/api/question-logs"],
@@ -17,13 +25,27 @@ export function QuestionAnalysisCharts() {
     if (questionLogs.length === 0) return [];
 
     if (viewMode === 'daily') {
-      const last14Days = Array.from({ length: 14 }, (_, i) => {
-        const date = new Date();
-        date.setDate(date.getDate() - (13 - i));
-        return date.toISOString().split('T')[0];
-      });
+      let dateRange: string[];
+      
+      if (useCustomDates) {
+        // Generate date range between start and end dates
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+        dateRange = [];
+        
+        for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+          dateRange.push(d.toISOString().split('T')[0]);
+        }
+      } else {
+        // Default: last 14 days
+        dateRange = Array.from({ length: 14 }, (_, i) => {
+          const date = new Date();
+          date.setDate(date.getDate() - (13 - i));
+          return date.toISOString().split('T')[0];
+        });
+      }
 
-      return last14Days.map(dateStr => {
+      return dateRange.map(dateStr => {
         const dayLogs = questionLogs.filter(log => log.study_date === dateStr);
         const totalQuestions = dayLogs.reduce((sum, log) => 
           sum + (Number(log.correct_count) || 0) + (Number(log.wrong_count) || 0) + (Number(log.blank_count) || 0), 0
@@ -104,7 +126,7 @@ export function QuestionAnalysisCharts() {
   };
 
 
-  const dailyWeeklyData = useMemo(() => prepareDailyWeeklyData(), [questionLogs, viewMode]);
+  const dailyWeeklyData = useMemo(() => prepareDailyWeeklyData(), [questionLogs, viewMode, useCustomDates, startDate, endDate]);
 
 
   return (
@@ -128,7 +150,7 @@ export function QuestionAnalysisCharts() {
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 flex-wrap">
               <div className="flex border-2 border-emerald-200/50 dark:border-emerald-700/50 rounded-xl p-1 bg-white/60 dark:bg-gray-900/60 backdrop-blur-sm">
                 <Button
                   variant={viewMode === 'daily' ? 'default' : 'ghost'}
@@ -157,11 +179,82 @@ export function QuestionAnalysisCharts() {
                   🗓️ Haftalık
                 </Button>
               </div>
-              <div className="text-sm text-muted-foreground bg-emerald-100/60 dark:bg-emerald-900/30 px-4 py-2 rounded-full border border-emerald-200/50 dark:border-emerald-700/50 font-medium">
-                {viewMode === 'daily' ? 'Son 14 gün' : 'Son 8 hafta'}
-              </div>
+
+              {/* Date Range Toggle */}
+              <Button
+                variant={useCustomDates ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setUseCustomDates(!useCustomDates)}
+                className={`text-sm px-3 py-2 h-auto font-medium transition-all duration-200 ${
+                  useCustomDates
+                    ? 'bg-gradient-to-r from-emerald-500 to-blue-500 text-white shadow-lg'
+                    : 'hover:bg-emerald-50 dark:hover:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-700'
+                }`}
+                data-testid="button-custom-dates"
+              >
+                <Calendar className="h-4 w-4 mr-1" />
+                Tarih Seç
+              </Button>
+
+              {!useCustomDates && (
+                <div className="text-sm text-muted-foreground bg-emerald-100/60 dark:bg-emerald-900/30 px-4 py-2 rounded-full border border-emerald-200/50 dark:border-emerald-700/50 font-medium">
+                  {viewMode === 'daily' ? 'Son 14 gün' : 'Son 8 hafta'}
+                </div>
+              )}
             </div>
           </div>
+
+          {/* Custom Date Range Inputs */}
+          {useCustomDates && viewMode === 'daily' && (
+            <div className="mb-6 p-4 bg-white/30 dark:bg-gray-900/30 rounded-xl border border-emerald-200/50 dark:border-emerald-700/50 backdrop-blur-sm">
+              <div className="flex items-center gap-4 flex-wrap">
+                <div className="flex items-center gap-2">
+                  <label className="text-sm font-medium text-emerald-700 dark:text-emerald-300">Başlangıç:</label>
+                  <Input
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    className="text-sm border-emerald-200 dark:border-emerald-700 focus:border-emerald-500 focus:ring-emerald-500"
+                    data-testid="input-start-date"
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <label className="text-sm font-medium text-emerald-700 dark:text-emerald-300">Bitiş:</label>
+                  <Input
+                    type="date"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    className="text-sm border-emerald-200 dark:border-emerald-700 focus:border-emerald-500 focus:ring-emerald-500"
+                    data-testid="input-end-date"
+                  />
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    const today = new Date();
+                    const twoWeeksAgo = new Date();
+                    twoWeeksAgo.setDate(today.getDate() - 13);
+                    setStartDate(twoWeeksAgo.toISOString().split('T')[0]);
+                    setEndDate(today.toISOString().split('T')[0]);
+                  }}
+                  className="text-sm hover:bg-emerald-50 dark:hover:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-700"
+                  data-testid="button-reset-dates"
+                >
+                  <RefreshCw className="h-4 w-4 mr-1" />
+                  Sıfırla
+                </Button>
+                <div className="text-sm text-muted-foreground bg-emerald-100/60 dark:bg-emerald-900/30 px-3 py-1 rounded-full border border-emerald-200/50 dark:border-emerald-700/50 font-medium">
+                  {(() => {
+                    const start = new Date(startDate);
+                    const end = new Date(endDate);
+                    const daysDiff = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+                    return `${daysDiff} gün`;
+                  })()}
+                </div>
+              </div>
+            </div>
+          )}
           
           {dailyWeeklyData.length === 0 || dailyWeeklyData.every(d => d.totalQuestions === 0) ? (
             <div className="text-center py-20 text-muted-foreground">

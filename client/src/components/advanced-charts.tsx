@@ -1,9 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, BarChart, Bar, Cell } from "recharts";
-import { TrendingUp, Target, Activity, AlertTriangle, BarChart3, Brain, Loader2, List, BarChart as BarChartIcon, Calendar, Clock } from "lucide-react";
+import { TrendingUp, Target, Activity, AlertTriangle, BarChart3, Brain, Loader2, List, BarChart as BarChartIcon, Calendar, Clock, RefreshCw } from "lucide-react";
 import { ExamResult, ExamSubjectNet } from "@shared/schema";
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 interface TopicStats {
   topic: string;
@@ -24,6 +25,14 @@ export function AdvancedCharts() {
   const [priorityViewMode, setPriorityViewMode] = useState<'chart' | 'text'>('text');
   // State for Error Frequency Analysis view toggle
   const [errorViewMode, setErrorViewMode] = useState<'chart' | 'text'>('text');
+  // State for date filtering
+  const [useCustomDates, setUseCustomDates] = useState(false);
+  const [startDate, setStartDate] = useState(() => {
+    const date = new Date();
+    date.setMonth(date.getMonth() - 3);
+    return date.toISOString().split('T')[0];
+  });
+  const [endDate, setEndDate] = useState(() => new Date().toISOString().split('T')[0]);
 
   const { data: examResults = [], isLoading: isLoadingExams } = useQuery<ExamResult[]>({
     queryKey: ["/api/exam-results"],
@@ -49,10 +58,25 @@ export function AdvancedCharts() {
 
   const isLoading = isLoadingExams || isLoadingNets || isLoadingTopics || isLoadingPriority || isLoadingFlashcards;
 
+  // Filter exam results based on date range
+  const filteredExamResults = useMemo(() => {
+    if (!useCustomDates) {
+      return examResults;
+    }
+    
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    
+    return examResults.filter(exam => {
+      const examDate = new Date(exam.exam_date);
+      return examDate >= start && examDate <= end;
+    });
+  }, [examResults, useCustomDates, startDate, endDate]);
+
   // Prepare line chart data for net progression over time
   const netProgressionData = useMemo(() => {
     // Sort exams by date descending to get latest 10, then reverse for chronological order
-    const sortedExams = [...examResults]
+    const sortedExams = [...filteredExamResults]
       .sort((a, b) => new Date(b.exam_date).getTime() - new Date(a.exam_date).getTime())
       .slice(0, 10)
       .reverse();
@@ -66,14 +90,14 @@ export function AdvancedCharts() {
       TYTTarget: 80, // Target line for TYT
       AYTTarget: 40  // Target line for AYT
     }));
-  }, [examResults]);
+  }, [filteredExamResults]);
 
   // Prepare enhanced hexagonal chart data for subject distribution (latest exam with fallback)
   const radarChartData = useMemo(() => {
-    if (examResults.length === 0) return [];
+    if (filteredExamResults.length === 0) return [];
     
     // Sort exams by date descending to get the actual latest exam
-    const sortedExams = [...examResults].sort((a, b) => new Date(b.exam_date).getTime() - new Date(a.exam_date).getTime());
+    const sortedExams = [...filteredExamResults].sort((a, b) => new Date(b.exam_date).getTime() - new Date(a.exam_date).getTime());
     const latestExam = sortedExams[0];
     
     // Try to parse subjects data from the latest exam (new format)
@@ -656,10 +680,75 @@ export function AdvancedCharts() {
                   </p>
                 </div>
               </div>
-              <div className="text-xs text-muted-foreground bg-green-100/60 dark:bg-green-900/30 px-4 py-2 rounded-full border border-green-200/50 dark:border-green-700/50">
-                Son {lineChartData.length} deneme
+              <div className="flex items-center gap-2">
+                <Button
+                  variant={useCustomDates ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setUseCustomDates(!useCustomDates)}
+                  className={`text-xs px-3 py-1 h-auto font-medium transition-all duration-200 ${
+                    useCustomDates
+                      ? 'bg-gradient-to-r from-green-500 to-teal-500 text-white shadow-lg'
+                      : 'hover:bg-green-50 dark:hover:bg-green-900/30 text-green-700 dark:text-green-300 border-green-200 dark:border-green-700'
+                  }`}
+                  data-testid="button-chart-dates"
+                >
+                  <Calendar className="h-3 w-3 mr-1" />
+                  Tarih Seç
+                </Button>
+                {!useCustomDates && (
+                  <div className="text-xs text-muted-foreground bg-green-100/60 dark:bg-green-900/30 px-4 py-2 rounded-full border border-green-200/50 dark:border-green-700/50">
+                    Son {lineChartData.length} deneme
+                  </div>
+                )}
               </div>
             </div>
+
+            {/* Custom Date Range Inputs */}
+            {useCustomDates && (
+              <div className="mb-6 p-4 bg-white/30 dark:bg-gray-900/30 rounded-xl border border-green-200/50 dark:border-green-700/50 backdrop-blur-sm">
+                <div className="flex items-center gap-4 flex-wrap">
+                  <div className="flex items-center gap-2">
+                    <label className="text-sm font-medium text-green-700 dark:text-green-300">Başlangıç:</label>
+                    <Input
+                      type="date"
+                      value={startDate}
+                      onChange={(e) => setStartDate(e.target.value)}
+                      className="text-sm border-green-200 dark:border-green-700 focus:border-green-500 focus:ring-green-500"
+                      data-testid="input-chart-start-date"
+                    />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <label className="text-sm font-medium text-green-700 dark:text-green-300">Bitiş:</label>
+                    <Input
+                      type="date"
+                      value={endDate}
+                      onChange={(e) => setEndDate(e.target.value)}
+                      className="text-sm border-green-200 dark:border-green-700 focus:border-green-500 focus:ring-green-500"
+                      data-testid="input-chart-end-date"
+                    />
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      const today = new Date();
+                      const threeMonthsAgo = new Date();
+                      threeMonthsAgo.setMonth(today.getMonth() - 3);
+                      setStartDate(threeMonthsAgo.toISOString().split('T')[0]);
+                      setEndDate(today.toISOString().split('T')[0]);
+                    }}
+                    className="text-sm hover:bg-green-50 dark:hover:bg-green-900/30 text-green-700 dark:text-green-300 border-green-200 dark:border-green-700"
+                    data-testid="button-chart-reset-dates"
+                  >
+                    <RefreshCw className="h-4 w-4 mr-1" />
+                    Sıfırla
+                  </Button>
+                  <div className="text-sm text-muted-foreground bg-green-100/60 dark:bg-green-900/30 px-3 py-1 rounded-full border border-green-200/50 dark:border-green-700/50 font-medium">
+                    {filteredExamResults.length} deneme
+                  </div>
+                </div>
+              </div>
+            )}
             
             {lineChartData.length === 0 ? (
               <div className="text-center py-20 text-muted-foreground">
