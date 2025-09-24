@@ -17,7 +17,9 @@ interface PriorityTopic {
   topic: string;
   wrongMentions: number;
   mentionFrequency: number;
-  priority: 'critical' | 'high' | 'medium' | 'low';
+  priority: number;
+  improvementNeeded: boolean;
+  lastSeen: string;
   color: string;
 }
 
@@ -205,8 +207,10 @@ export function AdvancedCharts() {
       topic: topic.topic.length > 15 ? `${topic.topic.substring(0, 15)}...` : topic.topic,
       fullTopic: topic.topic,
       wrongMentions: topic.wrongMentions,
-      priority: topic.priority,
+      priority: typeof topic.priority === 'number' ? topic.priority : 0,
       mentionFrequency: topic.mentionFrequency,
+      improvementNeeded: topic.improvementNeeded || false,
+      lastSeen: topic.lastSeen || new Date().toISOString(),
       color: topic.color
     }));
   };
@@ -956,7 +960,7 @@ export function AdvancedCharts() {
                             </div>
                             <div className="text-right">
                               <span className="text-xs px-2 py-1 bg-purple-100 dark:bg-purple-900/30 rounded-full text-purple-600 dark:text-purple-400">
-                                {exam.exam_type}
+                                Deneme
                               </span>
                             </div>
                           </div>
