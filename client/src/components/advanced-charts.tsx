@@ -15,9 +15,10 @@ interface TopicStats {
 
 interface PriorityTopic {
   topic: string;
-  priority: number;
-  lastSeen: string;
-  improvementNeeded: boolean;
+  wrongMentions: number;
+  mentionFrequency: number;
+  priority: 'critical' | 'high' | 'medium' | 'low';
+  color: string;
 }
 
 export function AdvancedCharts() {
@@ -203,9 +204,10 @@ export function AdvancedCharts() {
     return priorityTopics.slice(0, 8).map(topic => ({
       topic: topic.topic.length > 15 ? `${topic.topic.substring(0, 15)}...` : topic.topic,
       fullTopic: topic.topic,
+      wrongMentions: topic.wrongMentions,
       priority: topic.priority,
-      improvementNeeded: topic.improvementNeeded,
-      color: topic.improvementNeeded ? '#ef4444' : topic.priority > 70 ? '#f97316' : '#eab308'
+      mentionFrequency: topic.mentionFrequency,
+      color: topic.color
     }));
   };
 
