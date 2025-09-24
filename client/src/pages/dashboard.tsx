@@ -239,13 +239,13 @@ export default function Dashboard() {
     }
   };
 
-  // Generate GitHub-style yearly heatmap data (today is the last box)
+  // Generate recent months heatmap data (today is the last box, focusing on current period)
   const generateYearlyHeatmapData = () => {
     const data = [];
     const today = new Date();
     
-    // Generate 365 days ending with today
-    for (let i = 364; i >= 0; i--) {
+    // Generate 90 days (about 3 months) ending with today for better focus on recent activity
+    for (let i = 89; i >= 0; i--) {
       const date = new Date(today);
       date.setDate(today.getDate() - i); // Go back i days from today
       const dateStr = date.toISOString().split('T')[0];
@@ -451,7 +451,7 @@ export default function Dashboard() {
                 <CalendarDays className="h-6 w-6 text-purple-500" />
                 📈 Aylık Çalışma Heatmap
               </CardTitle>
-              <p className="text-sm text-purple-600/70 dark:text-purple-400/70 font-medium">Son 31 günlük çalışma yoğunluğu</p>
+              <p className="text-sm text-purple-600/70 dark:text-purple-400/70 font-medium">Son 90 günlük çalışma yoğunluğu - Bugün sağdaki son kutu</p>
             </CardHeader>
             <CardContent className="pt-6">
               {/* GitHub-style yearly contribution graph */}
@@ -468,12 +468,12 @@ export default function Dashboard() {
                     const currentMonth = new Date().getMonth();
                     const months = [];
                     
-                    // Generate 12 months starting from 12 months ago, ending with current month
-                    for (let i = 11; i >= 0; i--) {
+                    // Generate 3 recent months for better visibility
+                    for (let i = 2; i >= 0; i--) {
                       const monthIndex = (currentMonth - i + 12) % 12;
                       months.push(
-                        <div key={`month-${i}`} className="text-xs text-muted-foreground" style={{ width: '52px', textAlign: 'left' }}>
-                          {monthNames[monthIndex]}
+                        <div key={`month-${i}`} className={`text-xs font-medium ${i === 0 ? 'text-purple-700 dark:text-purple-300' : 'text-muted-foreground'}`} style={{ width: '80px', textAlign: 'left' }}>
+                          {monthNames[monthIndex]} {i === 0 ? '(Şu an)' : ''}
                         </div>
                       );
                     }
