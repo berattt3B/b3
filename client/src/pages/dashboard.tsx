@@ -447,74 +447,167 @@ export default function Dashboard() {
           </Card>
         </div>
 
-        {/* Deneme Sonuçları - Enhanced Styling */}
+        {/* Enhanced Deneme Sonuçları - Premium Styling */}
         <div className="grid grid-cols-1 gap-6 mb-8">
-          <div className="bg-gradient-to-br from-slate-50/80 via-white to-blue-50/30 dark:from-slate-900/50 dark:via-slate-800/50 dark:to-blue-950/30 rounded-2xl border border-slate-200/60 dark:border-slate-700/50 p-8 backdrop-blur-sm shadow-2xl hover:shadow-3xl transition-all duration-500 group relative overflow-hidden">
-            {/* Decorative Background Elements */}
-            <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-blue-500/10 to-purple-500/10 rounded-full blur-3xl"></div>
-            <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-gradient-to-tr from-green-500/10 to-blue-500/10 rounded-full blur-2xl"></div>
+          <div className="bg-gradient-to-br from-emerald-50/70 via-white to-green-50/40 dark:from-emerald-950/40 dark:via-slate-800/60 dark:to-green-950/30 rounded-3xl border border-emerald-200/50 dark:border-emerald-800/30 p-8 backdrop-blur-lg shadow-2xl hover:shadow-3xl transition-all duration-700 group relative overflow-hidden">
+            {/* Animated Background Elements */}
+            <div className="absolute top-0 right-0 w-48 h-48 bg-gradient-to-br from-emerald-500/15 to-green-500/10 rounded-full blur-3xl animate-pulse"></div>
+            <div className="absolute -bottom-12 -left-12 w-40 h-40 bg-gradient-to-tr from-green-500/15 to-emerald-500/10 rounded-full blur-3xl"></div>
+            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-32 h-32 bg-gradient-to-br from-emerald-400/5 to-green-400/5 rounded-full blur-2xl"></div>
             
             <div className="relative">
-              <h3 className="text-2xl font-bold text-foreground mb-6 flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <div className="p-3 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl shadow-lg group-hover:shadow-xl transition-all duration-300">
-                    <BarChart3 className="h-6 w-6 text-white" />
+              <div className="flex items-center justify-between mb-8">
+                <div className="flex items-center space-x-4">
+                  <div className="p-4 bg-gradient-to-br from-emerald-500 via-green-500 to-emerald-600 rounded-2xl shadow-xl group-hover:shadow-2xl transition-all duration-500 group-hover:scale-110">
+                    <Target className="h-7 w-7 text-white drop-shadow-lg" />
                   </div>
                   <div>
-                    <span className="bg-gradient-to-r from-green-600 via-emerald-600 to-blue-600 bg-clip-text text-transparent">
-                      📊 Deneme Sonuçları
-                    </span>
-                    <p className="text-sm text-muted-foreground font-normal">Sınav performans takibi</p>
+                    <h3 className="text-3xl font-bold bg-gradient-to-r from-emerald-600 via-green-600 to-emerald-700 bg-clip-text text-transparent">
+                      🎯 Deneme Sonuçları
+                    </h3>
+                    <p className="text-sm text-emerald-600/70 dark:text-emerald-400/70 font-medium">Detaylı performans analizi ve ilerleme takibi</p>
                   </div>
                 </div>
                 <Button 
                   onClick={() => setShowExamDialog(true)}
-                  size="sm" 
-                  className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 px-4 py-2"
+                  size="lg" 
+                  className="bg-gradient-to-r from-emerald-500 via-green-500 to-emerald-600 hover:from-emerald-600 hover:via-green-600 hover:to-emerald-700 text-white border-0 shadow-xl hover:shadow-2xl transition-all duration-500 px-6 py-3 rounded-xl text-base font-semibold hover:scale-105 group/btn relative overflow-hidden"
+                  data-testid="button-add-exam-result"
                 >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Yeni Ekle
+                  <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover/btn:opacity-100 transition-opacity duration-500"></div>
+                  <Plus className="h-5 w-5 mr-2 relative z-10" />
+                  <span className="relative z-10">Deneme Ekle</span>
                 </Button>
-              </h3>
+              </div>
             
             {examResults.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                <BarChart3 className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                <p className="text-sm">Henüz deneme kaydı yok</p>
+              <div className="text-center py-16 text-muted-foreground">
+                <div className="w-24 h-24 rounded-full bg-gradient-to-br from-emerald-100 to-green-100 dark:from-emerald-900/30 dark:to-green-900/30 flex items-center justify-center mx-auto mb-6 shadow-lg">
+                  <Target className="h-12 w-12 text-emerald-500" />
+                </div>
+                <h4 className="text-xl font-semibold text-emerald-700 dark:text-emerald-300 mb-2">Henüz deneme kaydı yok</h4>
+                <p className="text-sm opacity-75 mb-6">İlk deneme sonucunuzu ekleyerek başlayın</p>
+                <div className="flex justify-center space-x-1">
+                  <div className="w-2 h-2 rounded-full bg-emerald-500 animate-bounce"></div>
+                  <div className="w-2 h-2 rounded-full bg-green-500 animate-bounce delay-100"></div>
+                  <div className="w-2 h-2 rounded-full bg-emerald-600 animate-bounce delay-200"></div>
+                </div>
               </div>
             ) : (
-              <div className="space-y-3">
-                {/* Exam results list */}
+              <div className="space-y-4">
+                {/* Enhanced Exam Results List */}
                 {examResults.slice(0, 5).map((exam, index) => (
-                  <div key={exam.id} className="p-3 bg-muted/20 rounded-lg">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="text-sm font-medium text-foreground">
-                        {index === 0 ? 'Son Deneme' : `${index + 1}. Deneme`}
+                  <div 
+                    key={exam.id} 
+                    className="group/item bg-gradient-to-r from-white/80 to-emerald-50/50 dark:from-slate-800/80 dark:to-emerald-950/50 rounded-2xl border border-emerald-200/50 dark:border-emerald-700/30 p-5 backdrop-blur-sm shadow-lg hover:shadow-xl transition-all duration-500 hover:scale-[1.02] hover:border-emerald-300/60 relative overflow-hidden"
+                    data-testid={`exam-result-${exam.id}`}
+                  >
+                    {/* Ranking Badge for Top Result */}
+                    {index === 0 && (
+                      <div className="absolute top-3 left-3">
+                        <div className="flex items-center gap-1 bg-gradient-to-r from-yellow-500 to-amber-500 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg">
+                          <Award className="h-3 w-3" />
+                          Son Deneme
+                        </div>
                       </div>
-                      <button
-                        onClick={() => deleteExamResultMutation.mutate(exam.id)}
-                        disabled={deleteExamResultMutation.isPending}
-                        className="text-red-500 hover:text-red-700 p-1 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
-                        title="Deneme sonucunu sil"
-                        data-testid={`button-delete-exam-${exam.id}`}
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </button>
-                    </div>
-                    <div className="space-y-1">
-                      <div className="text-xs text-muted-foreground">{exam.exam_name}</div>
-                      <div className="text-xs text-muted-foreground mb-1">
-                        {new Date(exam.exam_date).toLocaleDateString('tr-TR')}
+                    )}
+                    
+                    {/* Delete Button */}
+                    <button
+                      onClick={() => deleteExamResultMutation.mutate(exam.id)}
+                      disabled={deleteExamResultMutation.isPending}
+                      className="absolute top-3 right-3 text-red-500 hover:text-red-700 p-2 hover:bg-red-100/50 dark:hover:bg-red-900/30 rounded-xl transition-all duration-300 opacity-0 group-hover/item:opacity-100 hover:scale-110"
+                      title="Deneme sonucunu sil"
+                      data-testid={`button-delete-exam-${exam.id}`}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                    
+                    <div className="space-y-4 mt-8">
+                      {/* Exam Header Info */}
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-gradient-to-br from-emerald-500/20 to-green-500/20 rounded-lg">
+                          <FlaskConical className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                        </div>
+                        <div className="flex-1">
+                          <h4 className="font-bold text-lg text-emerald-800 dark:text-emerald-200 group-hover/item:text-emerald-600 transition-colors">
+                            {exam.exam_name}
+                          </h4>
+                          <p className="text-sm text-emerald-600/70 dark:text-emerald-400/70 flex items-center gap-1">
+                            <CalendarDays className="h-3 w-3" />
+                            {new Date(exam.exam_date).toLocaleDateString('tr-TR', { 
+                              weekday: 'long', 
+                              year: 'numeric', 
+                              month: 'long', 
+                              day: 'numeric' 
+                            })}
+                          </p>
+                        </div>
                       </div>
-                      <div className="flex gap-2 text-sm">
-                        <span className="text-blue-600">TYT: {exam.tyt_net}</span>
+                      
+                      {/* Score Display */}
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="bg-gradient-to-br from-blue-50 to-blue-100/50 dark:from-blue-950/50 dark:to-blue-900/30 rounded-xl p-4 border border-blue-200/50 dark:border-blue-700/30">
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+                            <span className="text-xs font-medium text-blue-700 dark:text-blue-300">TYT SONUCU</span>
+                          </div>
+                          <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                            {exam.tyt_net}
+                          </div>
+                          <div className="text-xs text-blue-600/70 dark:text-blue-400/70">net puan</div>
+                        </div>
+                        
                         {exam.ayt_net && (
-                          <span className="text-purple-600">AYT: {exam.ayt_net}</span>
+                          <div className="bg-gradient-to-br from-purple-50 to-purple-100/50 dark:from-purple-950/50 dark:to-purple-900/30 rounded-xl p-4 border border-purple-200/50 dark:border-purple-700/30">
+                            <div className="flex items-center gap-2 mb-2">
+                              <div className="w-3 h-3 rounded-full bg-purple-500"></div>
+                              <span className="text-xs font-medium text-purple-700 dark:text-purple-300">AYT SONUCU</span>
+                            </div>
+                            <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">
+                              {exam.ayt_net}
+                            </div>
+                            <div className="text-xs text-purple-600/70 dark:text-purple-400/70">net puan</div>
+                          </div>
                         )}
+                      </div>
+                      
+                      {/* Performance Indicator */}
+                      <div className="flex items-center justify-between bg-emerald-50/50 dark:bg-emerald-950/30 rounded-lg p-3 border border-emerald-200/50 dark:border-emerald-700/30">
+                        <div className="flex items-center gap-2">
+                          <TrendingUp className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                          <span className="text-sm font-medium text-emerald-700 dark:text-emerald-300">Performans Değerlendirmesi</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          {[...Array(5)].map((_, i) => (
+                            <div 
+                              key={i} 
+                              className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                                i < Math.min(Math.ceil((parseFloat(exam.tyt_net) / 120) * 5), 5) 
+                                  ? 'bg-emerald-500' 
+                                  : 'bg-emerald-200 dark:bg-emerald-800'
+                              }`} 
+                            />
+                          ))}
+                        </div>
                       </div>
                     </div>
                   </div>
                 ))}
+                
+                {/* View All Results Link */}
+                {examResults.length > 5 && (
+                  <div className="text-center pt-4">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="text-emerald-600 border-emerald-300 hover:bg-emerald-50 dark:text-emerald-400 dark:border-emerald-700 dark:hover:bg-emerald-950/30"
+                      data-testid="button-view-all-exams"
+                    >
+                      Tüm Sonuçları Gör ({examResults.length - 5} tane daha)
+                    </Button>
+                  </div>
+                )}
               </div>
             )}
             </div>
