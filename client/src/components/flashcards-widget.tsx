@@ -1,11 +1,14 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ChevronLeft, ChevronRight, Brain, RefreshCw, Shuffle, CheckCircle, XCircle, AlertCircle, Plus } from "lucide-react";
+import { ChevronLeft, ChevronRight, Brain, RefreshCw, Shuffle, CheckCircle, XCircle, AlertCircle, Plus, Trash2, Sparkles, GraduationCap, BarChart3, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Link } from "wouter";
 
 interface Flashcard {
   id: string;
@@ -75,6 +78,21 @@ export function FlashcardsWidget() {
       queryClient.invalidateQueries({ queryKey: ["/api/flashcards/due"] });
       setNewCard({ question: '', answer: '', examType: 'TYT', subject: '', topic: '', difficulty: 'medium' });
       setIsCreatingCard(false);
+    }
+  });
+
+  const deleteCardMutation = useMutation({
+    mutationFn: async (cardId: string) => {
+      const response = await fetch(`/api/flashcards/${cardId}`, {
+        method: 'DELETE',
+      });
+      if (!response.ok) throw new Error('Failed to delete card');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/flashcards/due"] });
+      setCurrentCard(null);
+      setIsStudyMode(false);
     }
   });
 
@@ -155,42 +173,60 @@ export function FlashcardsWidget() {
 
   if (isLoading) {
     return (
-      <div className="bg-card rounded-xl border border-border p-4 transition-colors duration-300">
-        <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center">
-          <Brain className="h-5 w-5 mr-2 text-primary" />
-          Tekrar Kartları
-        </h3>
-        <div className="animate-pulse space-y-3">
-          <div className="h-4 bg-muted rounded"></div>
-          <div className="h-20 bg-muted rounded"></div>
-          <div className="h-8 bg-muted rounded"></div>
-        </div>
-      </div>
+      <Card className="bg-gradient-to-br from-card via-card to-card/95 border border-border/50 shadow-lg">
+        <CardHeader className="pb-4">
+          <h3 className="text-xl font-bold text-foreground flex items-center gap-3">
+            <div className="p-2 bg-primary/10 rounded-lg">
+              <Brain className="h-6 w-6 text-primary animate-pulse" />
+            </div>
+            <span className="bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+              Tekrar Kartları
+            </span>
+          </h3>
+        </CardHeader>
+        <CardContent>
+          <div className="animate-pulse space-y-4">
+            <div className="h-4 bg-gradient-to-r from-muted via-muted/80 to-muted rounded-lg"></div>
+            <div className="h-24 bg-gradient-to-br from-muted via-muted/60 to-muted/40 rounded-xl"></div>
+            <div className="h-10 bg-gradient-to-r from-muted via-muted/70 to-muted rounded-lg"></div>
+          </div>
+        </CardContent>
+      </Card>
     );
   }
 
   if (!isStudyMode || !currentCard) {
     return (
-      <div className="bg-card rounded-xl border border-border p-4 transition-colors duration-300">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-foreground flex items-center">
-            <Brain className="h-5 w-5 mr-2 text-primary" />
-            Tekrar Kartları
-          </h3>
-          <div className="flex items-center gap-2">
-            <div className="text-sm text-muted-foreground bg-muted/50 rounded-full px-3 py-1">
-              {dueCards.length} kart hazır
-            </div>
-            <Dialog open={isCreatingCard} onOpenChange={setIsCreatingCard}>
-              <DialogTrigger asChild>
-                <Button size="sm" variant="outline" className="h-8 w-8 p-0">
-                  <Plus className="h-4 w-4" />
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-md">
-                <DialogHeader>
-                  <DialogTitle>Yeni Tekrar Kartı Oluştur</DialogTitle>
-                </DialogHeader>
+      <Card className="bg-gradient-to-br from-card via-card to-card/95 border border-border/50 shadow-lg hover:shadow-xl transition-all duration-300">
+        <CardHeader className="pb-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-xl font-bold text-foreground flex items-center gap-3">
+              <div className="p-2 bg-gradient-to-br from-primary/20 to-primary/10 rounded-lg">
+                <Brain className="h-6 w-6 text-primary" />
+              </div>
+              <span className="bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+                Tekrar Kartları
+              </span>
+            </h3>
+            <div className="flex items-center gap-3">
+              <Badge variant="secondary" className="bg-gradient-to-r from-muted/80 to-muted/60 text-foreground font-medium px-3 py-1 shadow-sm">
+                <Sparkles className="h-3 w-3 mr-1" />
+                {dueCards.length} kart hazır
+              </Badge>
+              <Dialog open={isCreatingCard} onOpenChange={setIsCreatingCard}>
+                <DialogTrigger asChild>
+                  <Button size="sm" className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-sm">
+                    <Plus className="h-4 w-4 mr-1" />
+                    Ekle
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-md">
+                  <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2">
+                      <GraduationCap className="h-5 w-5 text-primary" />
+                      Yeni Tekrar Kartı Oluştur
+                    </DialogTitle>
+                  </DialogHeader>
                 <div className="space-y-4">
                   <div>
                     <label className="text-sm font-medium text-foreground">Sınav Türü</label>
@@ -279,71 +315,99 @@ export function FlashcardsWidget() {
           </div>
         </div>
 
-        {dueCards.length === 0 ? (
-          <div className="text-center py-6 text-muted-foreground">
-            <Brain className="h-8 w-8 mx-auto mb-2 opacity-50" />
-            <p className="text-sm">Çalışılacak kart yok</p>
-            <p className="text-xs mt-1">Tüm kartlar gözden geçirilmiş!</p>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            <div className="text-center">
-              <p className="text-sm text-muted-foreground mb-3">
-                {dueCards.length} kart çalışmaya hazır
-              </p>
-              <button
-                onClick={drawRandomCard}
-                className="bg-primary text-primary-foreground px-6 py-3 rounded-lg font-medium hover:bg-primary/90 transition-colors duration-200 flex items-center gap-2 mx-auto"
-                data-testid="draw-card-button"
-              >
-                <Shuffle className="h-4 w-4" />
-                Kart Çek
-              </button>
+        </CardHeader>
+        <CardContent>
+          {dueCards.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <div className="p-4 bg-muted/30 rounded-full w-fit mx-auto mb-4">
+                <Brain className="h-10 w-10 opacity-50" />
+              </div>
+              <p className="text-base font-medium mb-2">Çalışılacak kart yok</p>
+              <p className="text-sm">Tüm kartlar gözden geçirilmiş! 🎉</p>
             </div>
+          ) : (
+            <div className="space-y-6">
+              <div className="text-center">
+                <p className="text-sm text-muted-foreground mb-4">
+                  {dueCards.length} kart çalışmaya hazır
+                </p>
+                <Button
+                  onClick={drawRandomCard}
+                  size="lg"
+                  className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg hover:shadow-xl transition-all duration-300 px-8 py-3"
+                  data-testid="draw-card-button"
+                >
+                  <Shuffle className="h-5 w-5 mr-2" />
+                  Kart Çek
+                </Button>
+              </div>
 
-            <div className="grid grid-cols-3 gap-2 text-xs">
-              <div className="text-center p-2 bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 rounded-lg">
-                <div className="font-medium text-green-800 dark:text-green-300">Kolay</div>
-                <div className="text-green-600 dark:text-green-400">
-                  {dueCards.filter(c => c.difficulty === 'easy').length}
+              <div className="grid grid-cols-3 gap-3">
+                <div className="text-center p-4 bg-gradient-to-br from-green-50 to-green-100/50 dark:from-green-900/30 dark:to-green-800/20 border border-green-200 dark:border-green-800 rounded-xl shadow-sm">
+                  <div className="font-semibold text-green-800 dark:text-green-300 text-sm mb-1">Kolay</div>
+                  <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+                    {dueCards.filter(c => c.difficulty === 'easy').length}
+                  </div>
                 </div>
-              </div>
-              <div className="text-center p-2 bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-800 rounded-lg">
-                <div className="font-medium text-yellow-800 dark:text-yellow-300">Orta</div>
-                <div className="text-yellow-600 dark:text-yellow-400">
-                  {dueCards.filter(c => c.difficulty === 'medium').length}
+                <div className="text-center p-4 bg-gradient-to-br from-yellow-50 to-yellow-100/50 dark:from-yellow-900/30 dark:to-yellow-800/20 border border-yellow-200 dark:border-yellow-800 rounded-xl shadow-sm">
+                  <div className="font-semibold text-yellow-800 dark:text-yellow-300 text-sm mb-1">Orta</div>
+                  <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
+                    {dueCards.filter(c => c.difficulty === 'medium').length}
+                  </div>
                 </div>
-              </div>
-              <div className="text-center p-2 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg">
-                <div className="font-medium text-red-800 dark:text-red-300">Zor</div>
-                <div className="text-red-600 dark:text-red-400">
-                  {dueCards.filter(c => c.difficulty === 'hard').length}
+                <div className="text-center p-4 bg-gradient-to-br from-red-50 to-red-100/50 dark:from-red-900/30 dark:to-red-800/20 border border-red-200 dark:border-red-800 rounded-xl shadow-sm">
+                  <div className="font-semibold text-red-800 dark:text-red-300 text-sm mb-1">Zor</div>
+                  <div className="text-2xl font-bold text-red-600 dark:text-red-400">
+                    {dueCards.filter(c => c.difficulty === 'hard').length}
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        )}
-      </div>
+          )}
+        </CardContent>
+      </Card>
     );
   }
 
   return (
-    <div className="bg-card rounded-xl border border-border p-4 transition-colors duration-300">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <Brain className="h-5 w-5 text-primary" />
-          <h3 className="text-lg font-semibold text-foreground">Tekrar Kartları</h3>
+    <Card className="bg-gradient-to-br from-card via-card to-card/95 border border-border/50 shadow-lg">
+      <CardHeader className="pb-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-gradient-to-br from-primary/20 to-primary/10 rounded-lg">
+              <Brain className="h-6 w-6 text-primary" />
+            </div>
+            <h3 className="text-xl font-bold text-foreground">
+              <span className="bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+                Tekrar Kartları
+              </span>
+            </h3>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => deleteCardMutation.mutate(currentCard!.id)}
+              disabled={deleteCardMutation.isPending}
+              className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700"
+              title="Kartı sil"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsStudyMode(false)}
+              className="border-muted-foreground/20 hover:bg-muted/50"
+              title="Kart seçimine dön"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
-        <button
-          onClick={() => setIsStudyMode(false)}
-          className="text-muted-foreground hover:text-foreground p-1"
-          title="Kart seçimine dön"
-        >
-          <ChevronLeft className="h-4 w-4" />
-        </button>
-      </div>
+      </CardHeader>
 
-      <div className="space-y-4" data-testid="flashcard-study-mode">
+      <CardContent className="space-y-4" data-testid="flashcard-study-mode">
         {/* Card Info */}
         <div className="flex items-center justify-between text-sm">
           <div className="flex items-center gap-2">
@@ -413,6 +477,22 @@ export function FlashcardsWidget() {
               <div className="text-sm">
                 <p className="text-muted-foreground">Sizin cevabınız: <span className="font-medium">{userAnswer}</span></p>
                 <p className="text-muted-foreground">Doğru cevap: <span className="font-medium text-foreground">{currentCard.answer}</span></p>
+                {!isCorrect && (
+                  <div className="mt-3 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+                    <div className="flex items-center gap-2 text-amber-800 dark:text-amber-300">
+                      <AlertCircle className="h-4 w-4" />
+                      <span className="font-medium text-sm">Hata Analizi Önerisi</span>
+                    </div>
+                    <p className="text-amber-700 dark:text-amber-400 text-sm mt-1">
+                      Yanlış cevap verdiğin konuları analiz etmek için
+                    </p>
+                    <Link href="/dashboard" className="inline-flex items-center gap-2 mt-2 text-amber-800 dark:text-amber-300 hover:text-amber-900 dark:hover:text-amber-200 font-medium text-sm transition-colors">
+                      <BarChart3 className="h-4 w-4" />
+                      Raporlarım kısmında Hata Analiz Kısmını kontrol et !
+                      <ExternalLink className="h-3 w-3" />
+                    </Link>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -433,7 +513,7 @@ export function FlashcardsWidget() {
           İnceleme: {parseInt(currentCard.reviewCount) + 1} • 
           Kalan: {dueCards.length - 1} kart
         </div>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }
