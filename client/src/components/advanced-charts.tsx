@@ -22,6 +22,8 @@ interface PriorityTopic {
 export function AdvancedCharts() {
   // State for Priority Topics Analysis view toggle
   const [priorityViewMode, setPriorityViewMode] = useState<'chart' | 'text'>('chart');
+  // State for Error Frequency Analysis view toggle
+  const [errorViewMode, setErrorViewMode] = useState<'chart' | 'text'>('chart');
 
   const { data: examResults = [], isLoading: isLoadingExams } = useQuery<ExamResult[]>({
     queryKey: ["/api/exam-results"],
@@ -359,29 +361,80 @@ export function AdvancedCharts() {
           </div>
         </div>
 
-        {/* Topic Error Frequency Analysis */}
-        <div className="bg-gradient-to-br from-blue-50/50 via-card to-purple-50/50 dark:from-blue-950/20 dark:via-card dark:to-purple-950/20 rounded-xl border-2 border-blue-200/30 dark:border-blue-800/30 p-6 relative overflow-hidden shadow-2xl">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-500/10 to-purple-500/10 rounded-full blur-3xl"></div>
+        {/* Enhanced Error Frequency Analysis with Toggle */}
+        <div className="bg-gradient-to-br from-blue-50/60 via-card to-purple-50/40 dark:from-blue-950/30 dark:via-card dark:to-purple-950/25 rounded-2xl border-2 border-blue-200/40 dark:border-blue-800/40 p-8 relative overflow-hidden shadow-2xl backdrop-blur-sm">
+          <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-blue-500/10 to-purple-500/10 rounded-full blur-3xl animate-pulse"></div>
+          <div className="absolute -bottom-8 -left-8 w-32 h-32 bg-gradient-to-tr from-purple-500/10 to-blue-500/10 rounded-full blur-2xl"></div>
           <div className="relative">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center">
-                <Brain className="h-6 w-6 mr-2 text-blue-600" />
-                <h3 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                  📊 Hata Sıklığı Analizi
-                </h3>
+            <div className="flex items-center justify-between mb-8">
+              <div className="flex items-center space-x-3">
+                <div className="p-3 bg-gradient-to-br from-blue-500 via-purple-500 to-blue-600 rounded-xl shadow-lg">
+                  <Brain className="h-6 w-6 text-white drop-shadow-lg" />
+                </div>
+                <div>
+                  <h3 className="text-2xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-blue-700 bg-clip-text text-transparent">
+                    📊 Hata Sıklığı Analizi
+                  </h3>
+                  <p className="text-sm text-blue-600/70 dark:text-blue-400/70 font-medium">
+                    En sık yapılan hataların detayı
+                  </p>
+                </div>
               </div>
-              <div className="text-xs text-muted-foreground bg-blue-100/50 dark:bg-blue-900/20 px-3 py-1 rounded-full">
-                Toplam {topicErrorData.reduce((sum, item) => sum + item.errors, 0)} hata
+              
+              <div className="flex items-center gap-4">
+                <div className="text-xs text-muted-foreground bg-blue-100/60 dark:bg-blue-900/30 px-4 py-2 rounded-full border border-blue-200/50 dark:border-blue-700/50">
+                  Toplam {topicErrorData.reduce((sum, item) => sum + item.errors, 0)} hata
+                </div>
+                
+                {/* View Toggle Buttons */}
+                <div className="flex bg-blue-100/50 dark:bg-blue-900/30 rounded-xl p-1 border border-blue-200/50 dark:border-blue-700/50">
+                  <Button
+                    variant={errorViewMode === 'chart' ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => setErrorViewMode('chart')}
+                    className={`px-3 py-2 rounded-lg transition-all duration-300 ${
+                      errorViewMode === 'chart' 
+                        ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg' 
+                        : 'text-blue-600 dark:text-blue-400 hover:bg-blue-200/50 dark:hover:bg-blue-800/50'
+                    }`}
+                    data-testid="button-error-chart-view"
+                  >
+                    <BarChartIcon className="h-4 w-4 mr-2" />
+                    Grafik
+                  </Button>
+                  <Button
+                    variant={errorViewMode === 'text' ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => setErrorViewMode('text')}
+                    className={`px-3 py-2 rounded-lg transition-all duration-300 ${
+                      errorViewMode === 'text' 
+                        ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg' 
+                        : 'text-blue-600 dark:text-blue-400 hover:bg-blue-200/50 dark:hover:bg-blue-800/50'
+                    }`}
+                    data-testid="button-error-text-view"
+                  >
+                    <List className="h-4 w-4 mr-2" />
+                    Liste
+                  </Button>
+                </div>
               </div>
             </div>
             
             {topicErrorData.length === 0 ? (
-              <div className="text-center py-16 text-muted-foreground">
-                <BarChart3 className="h-12 w-12 mx-auto mb-4 opacity-40" />
-                <p className="text-sm font-medium">Henüz hata verisi bulunmuyor</p>
-                <p className="text-xs mt-1">Yanlış yaptığınız konuları işaretlemeye başlayın</p>
+              <div className="text-center py-20 text-muted-foreground">
+                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-900/30 dark:to-purple-900/30 flex items-center justify-center mx-auto mb-6 shadow-lg">
+                  <BarChart3 className="h-10 w-10 text-blue-500" />
+                </div>
+                <h4 className="text-lg font-semibold text-blue-700 dark:text-blue-300 mb-2">Henüz hata verisi bulunmuyor</h4>
+                <p className="text-sm opacity-75 mb-4">Yanlış yaptığınız konuları işaretlemeye başlayın</p>
+                <div className="flex justify-center space-x-1">
+                  <div className="w-2 h-2 rounded-full bg-blue-500 animate-bounce"></div>
+                  <div className="w-2 h-2 rounded-full bg-purple-500 animate-bounce delay-100"></div>
+                  <div className="w-2 h-2 rounded-full bg-blue-600 animate-bounce delay-200"></div>
+                </div>
               </div>
-            ) : (
+            ) : errorViewMode === 'chart' ? (
+              /* Chart View */
               <div className="h-80">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={topicErrorData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
@@ -419,6 +472,89 @@ export function AdvancedCharts() {
                     </Bar>
                   </BarChart>
                 </ResponsiveContainer>
+              </div>
+            ) : (
+              /* Text View */
+              <div className="space-y-4 max-h-80 overflow-y-auto">
+                {topicErrorData.slice(0, 10).map((topic, index) => (
+                  <div 
+                    key={index}
+                    className="group bg-gradient-to-r from-white/90 to-blue-50/50 dark:from-slate-800/90 dark:to-blue-950/50 rounded-2xl border border-blue-200/50 dark:border-blue-700/30 p-5 hover:shadow-xl transition-all duration-500 hover:scale-[1.02] relative overflow-hidden"
+                    data-testid={`error-topic-item-${index}`}
+                  >
+                    {/* Error Count Badge */}
+                    <div className="absolute top-3 left-3">
+                      <div className={`flex items-center justify-center w-8 h-8 rounded-full text-white text-sm font-bold shadow-lg ${
+                        topic.errors >= 8 
+                          ? 'bg-gradient-to-br from-red-500 to-red-600' 
+                          : topic.errors >= 5 
+                            ? 'bg-gradient-to-br from-orange-500 to-orange-600'
+                            : topic.errors >= 3
+                              ? 'bg-gradient-to-br from-yellow-500 to-yellow-600'
+                              : 'bg-gradient-to-br from-green-500 to-green-600'
+                      }`}>
+                        {topic.errors}
+                      </div>
+                    </div>
+                    
+                    <div className="pl-12 space-y-3">
+                      {/* Topic Name and Error Count */}
+                      <div className="flex items-center justify-between">
+                        <h4 className="font-bold text-lg text-blue-800 dark:text-blue-200 group-hover:text-blue-600 transition-colors">
+                          {topic.fullTopic}
+                        </h4>
+                        <div className="text-right">
+                          <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                            {topic.errors}
+                          </div>
+                          <div className="text-xs text-blue-600/70 dark:text-blue-400/70">hata sayısı</div>
+                        </div>
+                      </div>
+                      
+                      {/* Source and Frequency */}
+                      <div className="flex items-center justify-between">
+                        <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium ${
+                          topic.errors >= 8
+                            ? 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300'
+                            : topic.errors >= 5
+                              ? 'bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-300'
+                              : topic.errors >= 3
+                                ? 'bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-300'
+                                : 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300'
+                        }`}>
+                          <Activity className="h-3 w-3" />
+                          {topic.source}
+                        </div>
+                        
+                        <div className="flex items-center gap-1 text-xs text-blue-600/70 dark:text-blue-400/70">
+                          <BarChart3 className="h-3 w-3" />
+                          {topic.sessions} oturum
+                        </div>
+                      </div>
+                      
+                      {/* Error Progress Bar */}
+                      <div className="w-full bg-blue-100 dark:bg-blue-900/30 rounded-full h-2">
+                        <div 
+                          className={`h-2 rounded-full transition-all duration-700 ${
+                            topic.errors >= 8 
+                              ? 'bg-gradient-to-r from-red-500 to-red-600' 
+                              : topic.errors >= 5 
+                                ? 'bg-gradient-to-r from-orange-500 to-orange-600'
+                                : topic.errors >= 3
+                                  ? 'bg-gradient-to-r from-yellow-500 to-yellow-600'
+                                  : 'bg-gradient-to-r from-green-500 to-green-600'
+                          }`}
+                          style={{ width: `${Math.min((topic.errors / 10) * 100, 100)}%` }}
+                        />
+                      </div>
+                      
+                      {/* Frequency Indicator */}
+                      <div className="text-xs text-blue-600/60 dark:text-blue-400/60">
+                        Sıklık Oranı: %{topic.frequency.toFixed(1)}
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </div>
