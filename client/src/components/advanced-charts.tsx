@@ -140,66 +140,52 @@ export function AdvancedCharts() {
           return null;
         }
         
-        const net = correct - (wrong * 0.25);
-        const successRate = config.max > 0 ? Math.min(Math.round((net / config.max) * 100), 100) : 0;
-        const totalAttempted = correct + wrong + blank;
+        const netScore = correct - (wrong * 0.25);
+        const totalQuestions = correct + wrong + blank;
+        const successRate = totalQuestions > 0 ? (correct / totalQuestions) * 100 : 0;
         
         return {
-          subject: config.displayName,
-          subjectEmoji: config.emoji,
-          correct: correct,
-          wrong: wrong,
-          blank: blank,
-          net: Math.max(parseFloat(net.toFixed(1)), 0),
-          successRate: Math.max(successRate, 0),
-          totalQuestions: config.max,
-          attemptedQuestions: totalAttempted,
-          accuracy: totalAttempted > 0 ? Math.round((correct / totalAttempted) * 100) : 0
+          subject: `${config.emoji} ${config.displayName}`,
+          netScore: Math.max(0, netScore),
+          successRate,
+          fullMark: config.max
         };
       }).filter(Boolean);
     }
     
-    // Fallback to examSubjectNets for legacy compatibility
-    const latestExamNets = examSubjectNets.filter(net => net.exam_id === latestExam.id);
+    // Fallback to examSubjectNets if subjects_data is not available
+    const subjectGroups = examSubjectNets.reduce((acc, net) => {
+      if (net.exam_id === latestExam.id) {
+        const subject = net.subject;
+        const netScore = parseFloat(net.net_score) || 0;
+        const correct = parseInt(net.correct_count) || 0;
+        const wrong = parseInt(net.wrong_count) || 0;
+        const blank = parseInt(net.blank_count) || 0;
+        const total = correct + wrong + blank;
+        const successRate = total > 0 ? (correct / total) * 100 : 0;
+        
+        // Find matching config
+        const configEntry = Object.entries(subjectConfig).find(([key, config]) => 
+          config.legacyName === subject || config.displayName === subject
+        );
+        
+        if (configEntry) {
+          const [, config] = configEntry;
+          acc.push({
+            subject: `${config.emoji} ${config.displayName}`,
+            netScore: Math.max(0, netScore),
+            successRate,
+            fullMark: config.max
+          });
+        }
+      }
+      return acc;
+    }, [] as any[]);
     
-    if (latestExamNets.length === 0) {
-      return []; // No data available in either format
-    }
-    
-    return latestExamNets.map(net => {
-      const netScore = parseFloat(net.net_score) || 0;
-      
-      // Find matching subject config by legacy name
-      const configEntry = Object.entries(subjectConfig).find(([key, config]) => 
-        config.legacyName === net.subject || config.displayName === net.subject
-      );
-      
-      if (!configEntry) return null;
-      
-      const [subjectKey, config] = configEntry;
-      const maxValue = config.max;
-      const successRate = Math.min(Math.round((netScore / maxValue) * 100), 100);
-      
-      // For legacy format, we don't have individual correct/wrong counts
-      // Estimate based on net score (this is approximate)
-      const estimatedCorrect = Math.max(0, Math.round(netScore + 2)); // Rough estimate
-      const estimatedWrong = Math.max(0, Math.round((estimatedCorrect - netScore) / 0.25));
-      const estimatedBlank = Math.max(0, maxValue - estimatedCorrect - estimatedWrong);
-      
-      return {
-        subject: config.displayName,
-        subjectEmoji: config.emoji,
-        correct: estimatedCorrect,
-        wrong: estimatedWrong,
-        blank: estimatedBlank,
-        net: Math.max(parseFloat(netScore.toFixed(1)), 0),
-        successRate: Math.max(successRate, 0),
-        totalQuestions: config.max,
-        attemptedQuestions: estimatedCorrect + estimatedWrong,
-        accuracy: estimatedCorrect + estimatedWrong > 0 ? Math.round((estimatedCorrect / (estimatedCorrect + estimatedWrong)) * 100) : 0
-      };
-    }).filter(Boolean);
-  }, [examResults, examSubjectNets]);
+    return subjectGroups;
+  }, [filteredExamResults, examSubjectNets]);
+
+  const lineChartData = netProgressionData;
 
   // NEW: Prepare priority topics data for bar chart
   const preparePriorityTopicsData = () => {
@@ -218,58 +204,64 @@ export function AdvancedCharts() {
   // NEW: Prepare combined topic error frequency data (from both question logs and flashcards)
   const prepareTopicErrorData = () => {
     // Combine topic stats from question logs and flashcard errors
-    const combinedStats = new Map<string, { errors: number; frequency: number; sessions: number; source: string[] }>();
+    const topicErrorMap = new Map();
     
-    // Add stats from question logs
+    // Add from topicStats (question logs)
     topicStats.forEach(stat => {
-      const existing = combinedStats.get(stat.topic) || { errors: 0, frequency: 0, sessions: 0, source: [] };
-      existing.errors += stat.wrongMentions;
-      existing.frequency += stat.mentionFrequency;
-      existing.sessions += stat.totalSessions;
-      existing.source.push('Soru Çözümü');
-      combinedStats.set(stat.topic, existing);
-    });
-    
-    // Add stats from flashcard errors - group by topic
-    const flashcardTopicStats = new Map<string, number>();
-    flashcardErrors.forEach(error => {
-      const topic = error.topic || 'Genel';
-      flashcardTopicStats.set(topic, (flashcardTopicStats.get(topic) || 0) + 1);
-    });
-    
-    flashcardTopicStats.forEach((count, topic) => {
-      const existing = combinedStats.get(topic) || { errors: 0, frequency: 0, sessions: 0, source: [] };
-      existing.errors += count;
-      existing.frequency += count * 10; // Weight flashcard errors higher
-      if (!existing.source.includes('Tekrar Kartları')) {
-        existing.source.push('Tekrar Kartları');
+      const key = stat.topic;
+      if (!topicErrorMap.has(key)) {
+        topicErrorMap.set(key, { 
+          topic: key, 
+          errors: 0, 
+          frequency: 0, 
+          sessions: 0 
+        });
       }
-      combinedStats.set(topic, existing);
+      const data = topicErrorMap.get(key);
+      data.errors += stat.wrongMentions;
+      data.frequency = stat.mentionFrequency;
+      data.sessions = stat.totalSessions;
     });
     
-    // Convert to array and sort by total errors
-    return Array.from(combinedStats.entries())
-      .map(([topic, stats]) => ({
-        topic: topic.length > 12 ? `${topic.substring(0, 12)}...` : topic,
-        fullTopic: topic,
-        errors: stats.errors,
-        frequency: stats.frequency,
-        sessions: stats.sessions,
-        source: stats.source.join(' + '),
-        color: stats.errors >= 8 ? '#dc2626' : stats.errors >= 5 ? '#ea580c' : stats.errors >= 3 ? '#f59e0b' : '#22c55e'
-      }))
+    // Add from flashcard errors
+    flashcardErrors.forEach(error => {
+      const key = error.topic || 'Bilinmeyen Konu';
+      if (!topicErrorMap.has(key)) {
+        topicErrorMap.set(key, { 
+          topic: key, 
+          errors: 0, 
+          frequency: 0, 
+          sessions: 0 
+        });
+      }
+      const data = topicErrorMap.get(key);
+      data.errors += 1; // Each flashcard error counts as 1
+    });
+    
+    // Convert to array and sort by error count
+    const combinedData = Array.from(topicErrorMap.values())
       .sort((a, b) => b.errors - a.errors)
-      .slice(0, 8); // Show top 8 most problematic topics
+      .slice(0, 10);
+    
+    return combinedData;
   };
 
-  const lineChartData = netProgressionData;
   const priorityTopicsData = preparePriorityTopicsData();
   const topicErrorData = prepareTopicErrorData();
 
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-96 space-x-3">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <span className="text-lg font-medium">Analiz verileri yükleniyor...</span>
+      </div>
+    );
+  }
+
   return (
-    <div className="space-y-8">
-      {/* First Row - Priority & Error Analysis Charts */}
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+    <div className="space-y-8 p-6">
+      {/* Enhanced First Row - Priority Topics and Error Frequency */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
         {/* Enhanced Priority Topics Analysis with Toggle */}
         <div className="bg-gradient-to-br from-red-50/60 via-card to-orange-50/40 dark:from-red-950/30 dark:via-card dark:to-orange-950/25 rounded-2xl border-2 border-red-200/40 dark:border-red-800/40 p-8 relative overflow-hidden shadow-2xl backdrop-blur-sm">
           <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-red-500/10 to-orange-500/10 rounded-full blur-3xl animate-pulse"></div>
@@ -282,17 +274,17 @@ export function AdvancedCharts() {
                 </div>
                 <div>
                   <h3 className="text-2xl font-bold bg-gradient-to-r from-red-600 via-orange-600 to-red-700 bg-clip-text text-transparent">
-                    🎯 Öncelik Konuları Analizi
+                    🔥 Öncelik Konuları
                   </h3>
                   <p className="text-sm text-red-600/70 dark:text-red-400/70 font-medium">
-                    En çok dikkat gerektiren konular
+                    En çok çalışılması gereken konular
                   </p>
                 </div>
               </div>
               
               <div className="flex items-center gap-4">
                 <div className="text-xs text-muted-foreground bg-red-100/60 dark:bg-red-900/30 px-4 py-2 rounded-full border border-red-200/50 dark:border-red-700/50">
-                  {priorityTopicsData.length} sorunlu konu
+                  {priorityTopicsData.length} öncelik konusu
                 </div>
                 
                 {/* View Toggle Buttons */}
@@ -565,15 +557,11 @@ export function AdvancedCharts() {
                       }}
                       formatter={(value: any, name: any, props: any) => [
                         `${value} hata`,
-                        `Kaynak: ${props.payload.source}`
+                        '🚫 Hata Sayısı'
                       ]}
-                      labelFormatter={(label: any, payload: any) => payload?.[0]?.payload?.fullTopic || label}
+                      labelFormatter={(label: any) => `📚 ${label}`}
                     />
-                    <Bar dataKey="errors" radius={[4, 4, 0, 0]}>
-                      {topicErrorData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Bar>
+                    <Bar dataKey="errors" radius={[4, 4, 0, 0]} fill="#3b82f6" />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -586,18 +574,16 @@ export function AdvancedCharts() {
                     className="group bg-gradient-to-r from-white/90 to-blue-50/50 dark:from-slate-800/90 dark:to-blue-950/50 rounded-2xl border border-blue-200/50 dark:border-blue-700/30 p-5 hover:shadow-xl transition-all duration-500 hover:scale-[1.02] relative overflow-hidden"
                     data-testid={`error-topic-item-${index}`}
                   >
-                    {/* Error Count Badge */}
+                    {/* Error Ranking Badge */}
                     <div className="absolute top-3 left-3">
                       <div className={`flex items-center justify-center w-8 h-8 rounded-full text-white text-sm font-bold shadow-lg ${
-                        topic.errors >= 8 
+                        topic.errors >= 10 
                           ? 'bg-gradient-to-br from-red-500 to-red-600' 
                           : topic.errors >= 5 
                             ? 'bg-gradient-to-br from-orange-500 to-orange-600'
-                            : topic.errors >= 3
-                              ? 'bg-gradient-to-br from-yellow-500 to-yellow-600'
-                              : 'bg-gradient-to-br from-green-500 to-green-600'
+                            : 'bg-gradient-to-br from-blue-500 to-blue-600'
                       }`}>
-                        {topic.errors}
+                        #{index + 1}
                       </div>
                     </div>
                     
@@ -605,42 +591,21 @@ export function AdvancedCharts() {
                       {/* Topic Name and Error Count */}
                       <div className="flex items-center justify-between">
                         <h4 className="font-bold text-lg text-blue-800 dark:text-blue-200 group-hover:text-blue-600 transition-colors">
-                          {topic.fullTopic}
+                          {topic.topic}
                         </h4>
                         <div className="text-right">
                           <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
                             {topic.errors}
                           </div>
-                          <div className="text-xs text-blue-600/70 dark:text-blue-400/70">hata sayısı</div>
+                          <div className="text-xs text-blue-600/70 dark:text-blue-400/70">hata</div>
                         </div>
                       </div>
                       
-                      {/* Source and Frequency */}
-                      <div className="flex items-center justify-between">
-                        <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium ${
-                          topic.errors >= 8
-                            ? 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300'
-                            : topic.errors >= 5
-                              ? 'bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-300'
-                              : topic.errors >= 3
-                                ? 'bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-300'
-                                : 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300'
-                        }`}>
-                          <Activity className="h-3 w-3" />
-                          {topic.source}
-                        </div>
-                        
-                        <div className="flex items-center gap-1 text-xs text-blue-600/70 dark:text-blue-400/70">
-                          <BarChart3 className="h-3 w-3" />
-                          {topic.sessions} oturum
-                        </div>
-                      </div>
-                      
-                      {/* Error Progress Bar */}
+                      {/* Progress Bar */}
                       <div className="w-full bg-blue-100 dark:bg-blue-900/30 rounded-full h-2">
                         <div 
                           className={`h-2 rounded-full transition-all duration-700 ${
-                            topic.errors >= 8 
+                            topic.errors >= 10 
                               ? 'bg-gradient-to-r from-red-500 to-red-600' 
                               : topic.errors >= 5 
                                 ? 'bg-gradient-to-r from-orange-500 to-orange-600'
@@ -826,7 +791,7 @@ export function AdvancedCharts() {
                     <Line 
                       type="monotone" 
                       dataKey="AYTTarget" 
-                      stroke="#10b981" 
+                      stroke="#059669" 
                       strokeDasharray="8 4" 
                       strokeWidth={2}
                       dot={false} 
@@ -834,21 +799,21 @@ export function AdvancedCharts() {
                       name="AYT Hedef (40)"
                     />
                     
-                    {/* Enhanced Actual performance lines */}
+                    {/* Enhanced Main lines */}
                     <Line 
                       type="monotone" 
                       dataKey="TYT" 
-                      stroke="url(#tytGradient)" 
+                      stroke="#3b82f6" 
                       strokeWidth={4}
-                      dot={{ fill: '#1e40af', strokeWidth: 3, r: 6, stroke: '#ffffff' }} 
-                      activeDot={{ r: 8, stroke: '#1e40af', strokeWidth: 3, fill: '#ffffff' }}
+                      dot={{ fill: '#3b82f6', strokeWidth: 3, r: 6, stroke: '#ffffff' }} 
+                      activeDot={{ r: 8, stroke: '#3b82f6', strokeWidth: 3, fill: '#ffffff' }}
                       connectNulls={false}
                       name="TYT Net"
                     />
                     <Line 
                       type="monotone" 
                       dataKey="AYT" 
-                      stroke="url(#aytGradient)" 
+                      stroke="#059669" 
                       strokeWidth={4}
                       dot={{ fill: '#059669', strokeWidth: 3, r: 6, stroke: '#ffffff' }} 
                       activeDot={{ r: 8, stroke: '#059669', strokeWidth: 3, fill: '#ffffff' }}
@@ -886,25 +851,25 @@ export function AdvancedCharts() {
                 </div>
                 <div>
                   <h3 className="text-2xl font-bold bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-700 bg-clip-text text-transparent">
-                    🎯 Deneme Sonuçları
+                    🎯 Ders Dağılım Analizi
                   </h3>
                   <p className="text-sm text-purple-600/70 dark:text-purple-400/70 font-medium">
-                    Deneme bazında performans analizi
+                    Derslere göre performans dağılımı
                   </p>
                 </div>
               </div>
               <div className="text-xs text-muted-foreground bg-purple-100/60 dark:bg-purple-900/30 px-4 py-2 rounded-full border border-purple-200/50 dark:border-purple-700/50">
-                {examResults.length > 0 ? `${examResults.length} deneme` : 'Veri yok'}
+                {radarChartData.length > 0 ? `${radarChartData.length} ders` : 'Veri yok'}
               </div>
             </div>
             
-            {examResults.length === 0 ? (
+            {radarChartData.length === 0 ? (
               <div className="text-center py-20 text-muted-foreground">
                 <div className="w-20 h-20 rounded-full bg-gradient-to-br from-purple-100 to-indigo-100 dark:from-purple-900/30 dark:to-indigo-900/30 flex items-center justify-center mx-auto mb-6 shadow-lg">
                   <Target className="h-10 w-10 text-purple-500" />
                 </div>
-                <h4 className="text-lg font-semibold text-purple-700 dark:text-purple-300 mb-2">Deneme sonucu bulunmuyor</h4>
-                <p className="text-sm opacity-75 mb-4">Deneme ekleyerek performansınızı analiz edin</p>
+                <h4 className="text-lg font-semibold text-purple-700 dark:text-purple-300 mb-2">Ders verisi bulunmuyor</h4>
+                <p className="text-sm opacity-75 mb-4">Deneme ekleyerek ders dağılımınızı analiz edin</p>
                 <div className="flex justify-center space-x-1">
                   <div className="w-2 h-2 rounded-full bg-purple-500 animate-bounce"></div>
                   <div className="w-2 h-2 rounded-full bg-indigo-500 animate-bounce delay-100"></div>
@@ -912,164 +877,64 @@ export function AdvancedCharts() {
                 </div>
               </div>
             ) : (
-              <div className="space-y-6">
-                {/* Exam Result Boxes Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {examResults
-                    .sort((a, b) => new Date(b.exam_date).getTime() - new Date(a.exam_date).getTime())
-                    .slice(0, 6)
-                    .map((exam, index) => {
-                      const tytNet = exam.tyt_net ? parseFloat(exam.tyt_net.toString()) : 0;
-                      const aytNet = exam.ayt_net ? parseFloat(exam.ayt_net.toString()) : 0;
-                      const totalNet = tytNet + aytNet;
-                      const examDate = new Date(exam.exam_date).toLocaleDateString('tr-TR', { 
-                        day: 'numeric', 
-                        month: 'short' 
-                      });
-                      
-                      // Determine exam performance color
-                      const getPerformanceColor = (net: number, isAyt: boolean = false) => {
-                        const threshold = isAyt ? 40 : 80;
-                        if (net >= threshold * 0.9) return 'text-green-600 dark:text-green-400';
-                        if (net >= threshold * 0.7) return 'text-yellow-600 dark:text-yellow-400';
-                        if (net >= threshold * 0.5) return 'text-orange-600 dark:text-orange-400';
-                        return 'text-red-600 dark:text-red-400';
-                      };
-                      
-                      const getPerformanceBg = (net: number, isAyt: boolean = false) => {
-                        const threshold = isAyt ? 40 : 80;
-                        if (net >= threshold * 0.9) return 'from-green-50 to-green-100/50 dark:from-green-950/30 dark:to-green-900/20 border-green-200 dark:border-green-700/50';
-                        if (net >= threshold * 0.7) return 'from-yellow-50 to-yellow-100/50 dark:from-yellow-950/30 dark:to-yellow-900/20 border-yellow-200 dark:border-yellow-700/50';
-                        if (net >= threshold * 0.5) return 'from-orange-50 to-orange-100/50 dark:from-orange-950/30 dark:to-orange-900/20 border-orange-200 dark:border-orange-700/50';
-                        return 'from-red-50 to-red-100/50 dark:from-red-950/30 dark:to-red-900/20 border-red-200 dark:border-red-700/50';
-                      };
-                      
-                      return (
-                        <div
-                          key={exam.id}
-                          className={`relative bg-gradient-to-br ${getPerformanceBg(totalNet)} rounded-2xl border p-6 hover:shadow-lg transition-all duration-300 hover:scale-105`}
-                          data-testid={`exam-result-box-${index}`}
-                        >
-                          {/* Exam Header */}
-                          <div className="flex items-start justify-between mb-4">
-                            <div className="flex-1">
-                              <h4 className="text-sm font-bold text-purple-700 dark:text-purple-300 mb-1">
-                                {exam.exam_name.length > 20 ? `${exam.exam_name.substring(0, 20)}...` : exam.exam_name}
-                              </h4>
-                              <p className="text-xs text-muted-foreground">{examDate}</p>
-                            </div>
-                            <div className="text-right">
-                              <span className="text-xs px-2 py-1 bg-purple-100 dark:bg-purple-900/30 rounded-full text-purple-600 dark:text-purple-400">
-                                Deneme
-                              </span>
-                            </div>
-                          </div>
-                          
-                          {/* Net Scores */}
-                          <div className="space-y-3">
-                            {/* TYT Net */}
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center space-x-2">
-                                <div className="w-3 h-3 rounded-full bg-blue-500"></div>
-                                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">TYT</span>
-                              </div>
-                              <div className="text-right">
-                                <span className={`text-lg font-bold ${getPerformanceColor(tytNet)}`}>
-                                  {tytNet.toFixed(1)}
-                                </span>
-                                <span className="text-xs text-muted-foreground ml-1">/120</span>
-                              </div>
-                            </div>
-                            
-                            {/* AYT Net (if available) */}
-                            {aytNet > 0 && (
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-center space-x-2">
-                                  <div className="w-3 h-3 rounded-full bg-green-500"></div>
-                                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">AYT</span>
-                                </div>
-                                <div className="text-right">
-                                  <span className={`text-lg font-bold ${getPerformanceColor(aytNet, true)}`}>
-                                    {aytNet.toFixed(1)}
-                                  </span>
-                                  <span className="text-xs text-muted-foreground ml-1">/80</span>
-                                </div>
-                              </div>
-                            )}
-                            
-                            {/* Total Net */}
-                            <div className="border-t border-purple-200/50 dark:border-purple-700/50 pt-2">
-                              <div className="flex items-center justify-between">
-                                <span className="text-sm font-semibold text-purple-700 dark:text-purple-300">Toplam</span>
-                                <span className="text-xl font-bold text-purple-700 dark:text-purple-300">
-                                  {totalNet.toFixed(1)}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                          
-                          {/* Performance Indicator */}
-                          <div className="mt-4">
-                            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                              <div 
-                                className="h-2 rounded-full bg-gradient-to-r from-purple-500 to-indigo-500 transition-all duration-500"
-                                style={{ width: `${Math.min((totalNet / 200) * 100, 100)}%` }}
-                              ></div>
-                            </div>
-                            <div className="flex justify-between items-center mt-1">
-                              <span className="text-xs text-muted-foreground">0</span>
-                              <span className="text-xs text-muted-foreground">200</span>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                </div>
-                
-                {/* Summary Stats */}
-                <div className="grid grid-cols-3 gap-4 mt-6">
-                  <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-blue-100/50 dark:from-blue-950/30 dark:to-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-700/50">
-                    <div className="text-2xl font-bold text-blue-700 dark:text-blue-300">
-                      {examResults.length > 0 ? 
-                        (examResults.reduce((sum, exam) => sum + (parseFloat(exam.tyt_net?.toString() || '0')), 0) / examResults.length).toFixed(1) : 
-                        '0.0'
-                      }
-                    </div>
-                    <div className="text-xs font-medium text-blue-600 dark:text-blue-400">
-                      Ortalama TYT
-                    </div>
-                  </div>
-                  <div className="text-center p-4 bg-gradient-to-br from-green-50 to-green-100/50 dark:from-green-950/30 dark:to-green-900/20 rounded-xl border border-green-200 dark:border-green-700/50">
-                    <div className="text-2xl font-bold text-green-700 dark:text-green-300">
-                      {examResults.length > 0 ? 
-                        (examResults.reduce((sum, exam) => sum + (parseFloat(exam.ayt_net?.toString() || '0')), 0) / examResults.filter(e => parseFloat(e.ayt_net?.toString() || '0') > 0).length || 1).toFixed(1) : 
-                        '0.0'
-                      }
-                    </div>
-                    <div className="text-xs font-medium text-green-600 dark:text-green-400">
-                      Ortalama AYT
-                    </div>
-                  </div>
-                  <div className="text-center p-4 bg-gradient-to-br from-purple-50 to-purple-100/50 dark:from-purple-950/30 dark:to-purple-900/20 rounded-xl border border-purple-200 dark:border-purple-700/50">
-                    <div className="text-2xl font-bold text-purple-700 dark:text-purple-300">
-                      {examResults.length}
-                    </div>
-                    <div className="text-xs font-medium text-purple-600 dark:text-purple-400">
-                      Toplam Deneme
-                    </div>
-                  </div>
-                </div>
-
-                {/* SVG Definitions */}
-                <svg width="0" height="0">
-                  <defs>
-                    <linearGradient id="hexProgressGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                      <stop offset="0%" stopColor="#8b5cf6" />
-                      <stop offset="50%" stopColor="#a855f7" />
-                      <stop offset="100%" stopColor="#7c3aed" />
-                    </linearGradient>
-                  </defs>
-                </svg>
+              <div className="h-96">
+                <ResponsiveContainer width="100%" height="100%">
+                  <RadarChart data={radarChartData} margin={{ top: 20, right: 80, bottom: 20, left: 80 }}>
+                    <PolarGrid className="opacity-30" stroke="currentColor" />
+                    <PolarAngleAxis 
+                      dataKey="subject" 
+                      className="text-xs text-muted-foreground font-medium"
+                      tick={{ fontSize: 11, fontWeight: 500 }}
+                    />
+                    <PolarRadiusAxis 
+                      angle={90} 
+                      domain={[0, 'dataMax']}
+                      className="text-xs text-muted-foreground"
+                      tick={{ fontSize: 10 }}
+                    />
+                    
+                    {/* Net Score Radar */}
+                    <Radar 
+                      name="Net Puan" 
+                      dataKey="netScore" 
+                      stroke="#8b5cf6" 
+                      fill="rgba(139, 92, 246, 0.2)" 
+                      strokeWidth={3}
+                      dot={{ fill: '#8b5cf6', strokeWidth: 2, r: 5 }}
+                    />
+                    
+                    {/* Success Rate Radar */}
+                    <Radar 
+                      name="Başarı Oranı %" 
+                      dataKey="successRate" 
+                      stroke="#6366f1" 
+                      fill="rgba(99, 102, 241, 0.1)" 
+                      strokeWidth={2}
+                      strokeDasharray="5 5"
+                      dot={{ fill: '#6366f1', strokeWidth: 2, r: 4 }}
+                    />
+                    
+                    <Tooltip 
+                      contentStyle={{
+                        backgroundColor: 'hsl(var(--card))',
+                        border: '1px solid hsl(var(--border))',
+                        borderRadius: '12px',
+                        fontSize: '13px',
+                        boxShadow: '0 8px 32px rgba(0,0,0,0.1)'
+                      }}
+                      formatter={(value: any, name: any, props: any) => [
+                        name === 'Net Puan' ? `${value} net` : `%${value}`,
+                        name === 'Net Puan' ? '📊 Net Puan' : '📈 Başarı Oranı'
+                      ]}
+                      labelFormatter={(label: any) => `📚 ${label}`}
+                    />
+                    
+                    <Legend 
+                      wrapperStyle={{ paddingTop: '20px' }}
+                      iconType="line"
+                    />
+                  </RadarChart>
+                </ResponsiveContainer>
               </div>
             )}
           </div>
