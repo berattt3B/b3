@@ -48,7 +48,8 @@ export const questionLogs = pgTable("question_logs", {
   correct_count: text("correct_count").notNull(),
   wrong_count: text("wrong_count").notNull(),
   blank_count: text("blank_count").notNull().default("0"),
-  wrong_topics: text("wrong_topics").array().default([]), // Array of topics where mistakes were made
+  wrong_topics: text("wrong_topics").array().default([]), // Array of topics where mistakes were made (legacy)
+  wrong_topics_json: text("wrong_topics_json"), // JSON string for structured wrong topic data {topic, difficulty, category, notes}
   time_spent_minutes: integer("time_spent_minutes"), // Optional - time spent solving questions in minutes
   study_date: text("study_date").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
@@ -58,6 +59,7 @@ export const examResults = pgTable("exam_results", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   exam_name: text("exam_name").notNull(),
   exam_date: text("exam_date").notNull(),
+  exam_type: text("exam_type", { enum: ["TYT", "AYT"] }), // Optional for backward compatibility
   tyt_net: text("tyt_net").notNull().default("0"),
   ayt_net: text("ayt_net").notNull().default("0"),
   subjects_data: text("subjects_data"), // JSON string containing detailed subject breakdown
@@ -112,11 +114,18 @@ export const insertGoalSchema = createInsertSchema(goals).omit({
 export const insertQuestionLogSchema = createInsertSchema(questionLogs).omit({
   id: true,
   createdAt: true,
+}).extend({
+  // Allow both legacy wrong_topics array and new structured format
+  wrong_topics: z.array(z.string()).optional(),
+  wrong_topics_json: z.string().optional(),
 });
 
 export const insertExamResultSchema = createInsertSchema(examResults).omit({
   id: true,
   createdAt: true,
+}).extend({
+  // Make exam_type optional for backward compatibility
+  exam_type: z.enum(["TYT", "AYT"]).optional(),
 });
 
 export const insertFlashcardSchema = createInsertSchema(flashcards).omit({

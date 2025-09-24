@@ -351,6 +351,7 @@ export class MemStorage implements IStorage {
       topic: insertLog.topic ?? null,
       blank_count: insertLog.blank_count ?? "0",
       wrong_topics: insertLog.wrong_topics ?? [],
+      wrong_topics_json: insertLog.wrong_topics_json ?? null,
       time_spent_minutes: insertLog.time_spent_minutes ?? null,
       createdAt: new Date(),
     };
@@ -387,6 +388,7 @@ export class MemStorage implements IStorage {
     const result: ExamResult = {
       ...insertResult,
       id,
+      exam_type: insertResult.exam_type ?? null,
       notes: insertResult.notes ?? null,
       ranking: insertResult.ranking ?? null,
       tyt_net: insertResult.tyt_net ?? "0",

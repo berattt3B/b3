@@ -834,27 +834,35 @@ export default function Dashboard() {
               </div>
             ) : (
               <div className="space-y-6">
-                {examResults.map((exam, index) => {
-                  // Enhanced emoji selection with performance-based logic
-                  const performanceEmojis = {
-                    excellent: ['🏆', '👑', '🌟', '💎', '🔥'],
-                    good: ['🏅', '✨', '💯', '🚀', '⭐'],
-                    average: ['📚', '🎯', '💡', '🎓', '📊'],
-                    improvement: ['💪', '🌱', '⚡', '🎨', '🔋']
+                {examResults
+                  .sort((a, b) => new Date(b.exam_date).getTime() - new Date(a.exam_date).getTime())
+                  .map((exam, index) => {
+                  // Get exam type and relevant net score
+                  const examType = exam.exam_type || (parseFloat(exam.ayt_net) > 0 ? 'AYT' : 'TYT');
+                  const relevantNet = examType === 'TYT' ? parseFloat(exam.tyt_net) || 0 : parseFloat(exam.ayt_net) || 0;
+                  
+                  // Compute exam number for this exam type
+                  const sameTypeExams = examResults
+                    .filter(e => (e.exam_type || (parseFloat(e.ayt_net) > 0 ? 'AYT' : 'TYT')) === examType)
+                    .sort((a, b) => new Date(a.exam_date).getTime() - new Date(b.exam_date).getTime());
+                  const examNumber = sameTypeExams.findIndex(e => e.id === exam.id) + 1;
+                  
+                  // Performance emoji based on relevant net score
+                  const getPerformanceEmoji = (net: number, type: string) => {
+                    if (type === 'TYT') {
+                      if (net >= 90) return '😎'; // Excellent
+                      if (net >= 70) return '🙂'; // Good  
+                      if (net >= 50) return '😐'; // Average
+                      return '😓'; // Needs improvement
+                    } else { // AYT
+                      if (net >= 50) return '😎'; // Excellent
+                      if (net >= 40) return '🙂'; // Good
+                      if (net >= 30) return '😐'; // Average
+                      return '😓'; // Needs improvement
+                    }
                   };
                   
-                  const tytScore = parseFloat(exam.tyt_net) || 0;
-                  const aytScore = parseFloat(exam.ayt_net) || 0;
-                  const totalScore = tytScore + aytScore;
-                  
-                  let emojiCategory: keyof typeof performanceEmojis;
-                  if (totalScore >= 80) emojiCategory = 'excellent';
-                  else if (totalScore >= 60) emojiCategory = 'good';
-                  else if (totalScore >= 40) emojiCategory = 'average';
-                  else emojiCategory = 'improvement';
-                  
-                  const categoryEmojis = performanceEmojis[emojiCategory];
-                  const examEmoji = categoryEmojis[index % categoryEmojis.length];
+                  const examEmoji = getPerformanceEmoji(relevantNet, examType);
                   
                   // Calculate performance indicators
                   const isRecentExam = new Date(exam.exam_date) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
@@ -880,7 +888,7 @@ export default function Dashboard() {
                               <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-green-500/20 flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300 group-hover:scale-110">
                                 <span className="text-4xl filter drop-shadow-lg">{examEmoji}</span>
                               </div>
-                              {totalScore >= 80 && (
+                              {relevantNet >= (examType === 'TYT' ? 90 : 50) && (
                                 <div className="absolute -top-2 -right-2 w-6 h-6 bg-gradient-to-br from-yellow-400 to-orange-400 rounded-full flex items-center justify-center shadow-lg">
                                   <span className="text-xs">⭐</span>
                                 </div>
@@ -888,54 +896,39 @@ export default function Dashboard() {
                             </div>
                             <div>
                               <div className="text-2xl font-bold text-emerald-700 dark:text-emerald-300 mb-2 group-hover:text-emerald-600 dark:group-hover:text-emerald-200 transition-colors">
-                                {exam.exam_name}
+                                {examType} #{examNumber} • {examDate.toLocaleDateString('tr-TR', { 
+                                  day: 'numeric', 
+                                  month: 'numeric', 
+                                  year: 'numeric' 
+                                })}
                               </div>
                               <div className="flex items-center gap-4 text-sm text-muted-foreground">
                                 <div className="flex items-center gap-2">
-                                  <CalendarDays className="h-4 w-4" />
                                   <span className="font-medium">
-                                    {examDate.toLocaleDateString('tr-TR', { 
-                                      day: 'numeric', 
-                                      month: 'long', 
-                                      year: 'numeric' 
-                                    })}
+                                    {daysSinceExam === 0 ? 'Bugün' : `${daysSinceExam} gün önce`}
                                   </span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <Clock className="h-4 w-4" />
-                                  <span>{daysSinceExam === 0 ? 'Bugün' : `${daysSinceExam} gün önce`}</span>
                                 </div>
                               </div>
                             </div>
                           </div>
                           
                           <div className="flex items-center gap-6">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                              <div className="text-center p-4 bg-gradient-to-br from-emerald-100/80 to-emerald-50/80 dark:from-emerald-900/40 dark:to-emerald-800/30 rounded-2xl border-2 border-emerald-200/60 dark:border-emerald-700/50 shadow-lg group-hover:shadow-xl transition-all duration-300">
-                                <div className="flex items-center justify-center gap-2 mb-2">
-                                  <div className="w-3 h-3 rounded-full bg-emerald-500 shadow-sm"></div>
-                                  <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">TYT Net</span>
-                                </div>
-                                <div className="text-3xl font-bold text-emerald-700 dark:text-emerald-300 mb-1">{exam.tyt_net}</div>
-                                <div className="text-xs text-emerald-600/70 dark:text-emerald-400/70 font-medium">/ 120 soruluk</div>
+                            <div className="text-center p-4 bg-gradient-to-br from-emerald-100/80 to-emerald-50/80 dark:from-emerald-900/40 dark:to-emerald-800/30 rounded-2xl border-2 border-emerald-200/60 dark:border-emerald-700/50 shadow-lg group-hover:shadow-xl transition-all duration-300">
+                              <div className="flex items-center justify-center gap-2 mb-2">
+                                <div className={`w-3 h-3 rounded-full shadow-sm ${examType === 'TYT' ? 'bg-emerald-500' : 'bg-blue-500'}`}></div>
+                                <span className={`text-sm font-bold ${examType === 'TYT' ? 'text-emerald-600 dark:text-emerald-400' : 'text-blue-600 dark:text-blue-400'}`}>
+                                  {examType} Net
+                                </span>
                               </div>
-                              {exam.ayt_net !== "0" && (
-                                <div className="text-center p-4 bg-gradient-to-br from-blue-100/80 to-blue-50/80 dark:from-blue-900/40 dark:to-blue-800/30 rounded-2xl border-2 border-blue-200/60 dark:border-blue-700/50 shadow-lg group-hover:shadow-xl transition-all duration-300">
-                                  <div className="flex items-center justify-center gap-2 mb-2">
-                                    <div className="w-3 h-3 rounded-full bg-blue-500 shadow-sm"></div>
-                                    <span className="text-sm font-bold text-blue-600 dark:text-blue-400">AYT Net</span>
-                                  </div>
-                                  <div className="text-3xl font-bold text-blue-700 dark:text-blue-300 mb-1">{exam.ayt_net}</div>
-                                  <div className="text-xs text-blue-600/70 dark:text-blue-400/70 font-medium">/ 80 soruluk</div>
-                                </div>
-                              )}
+                              <div className={`text-3xl font-bold mb-1 ${examType === 'TYT' ? 'text-emerald-700 dark:text-emerald-300' : 'text-blue-700 dark:text-blue-300'}`}>
+                                {relevantNet.toFixed(2)}
+                              </div>
+                              <div className={`text-xs font-medium ${examType === 'TYT' ? 'text-emerald-600/70 dark:text-emerald-400/70' : 'text-blue-600/70 dark:text-blue-400/70'}`}>
+                                / {examType === 'TYT' ? '120' : '80'} soruluk
+                              </div>
                             </div>
                             
                             <div className="flex flex-col gap-3">
-                              <div className="text-center p-3 bg-gradient-to-br from-purple-100/80 to-purple-50/80 dark:from-purple-900/40 dark:to-purple-800/30 rounded-xl border border-purple-200/60 dark:border-purple-700/50">
-                                <div className="text-lg font-bold text-purple-700 dark:text-purple-300">{totalScore.toFixed(1)}</div>
-                                <div className="text-xs text-purple-600/70 dark:text-purple-400/70 font-medium">Toplam</div>
-                              </div>
                               
                               <button
                                 onClick={() => deleteExamResultMutation.mutate(exam.id)}
@@ -953,23 +946,21 @@ export default function Dashboard() {
                         <div className="flex items-center justify-between pt-4 border-t border-emerald-200/50 dark:border-emerald-700/30">
                           <div className="flex items-center gap-4">
                             <div className={`px-3 py-1.5 rounded-full text-sm font-medium ${
-                              totalScore >= 80 ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300' :
-                              totalScore >= 60 ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300' :
-                              totalScore >= 40 ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300' :
+                              relevantNet >= (examType === 'TYT' ? 90 : 50) ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300' :
+                              relevantNet >= (examType === 'TYT' ? 70 : 40) ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300' :
+                              relevantNet >= (examType === 'TYT' ? 50 : 30) ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300' :
                               'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300'
                             }`}>
-                              {totalScore >= 80 ? '🎯' :
-                               totalScore >= 60 ? '👍' :
-                               totalScore >= 40 ? '📈' : '💪'}
+                              {examEmoji}
                             </div>
                             <div className="text-xs text-muted-foreground">
-                              {exam.exam_type} Denemesi
+                              {examType} #{examNumber}
                             </div>
                           </div>
                           
                           <div className="flex items-center gap-2 text-xs text-muted-foreground">
                             <Award className="h-4 w-4" />
-                            <span>#{index + 1} Deneme</span>
+                            <span>{examDate.toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' })}</span>
                           </div>
                         </div>
                       </CardContent>
@@ -1407,9 +1398,11 @@ export default function Dashboard() {
             <div className="flex gap-2">
               <Button
                 onClick={() => {
-                  // Convert enhanced wrong topics to simple string array for backend compatibility
-                  const wrong_topics_converted = newQuestion.wrong_topics.map(topic => 
-                    typeof topic === 'string' ? topic : `${topic.topic} [${topic.category}, ${topic.difficulty}]`
+                  // Separate structured analysis data from simple topic names
+                  const wrong_topics_json = newQuestion.wrong_topics.length > 0 ? 
+                    JSON.stringify(newQuestion.wrong_topics) : null;
+                  const wrong_topics_simple = newQuestion.wrong_topics.map(topic => 
+                    typeof topic === 'string' ? topic : topic.topic
                   );
 
                   if (editingQuestionLog) {
@@ -1422,7 +1415,8 @@ export default function Dashboard() {
                         wrong_count: newQuestion.wrong_count,
                         blank_count: newQuestion.blank_count || "0",
                         study_date: newQuestion.study_date,
-                        wrong_topics: wrong_topics_converted,
+                        wrong_topics: wrong_topics_simple,
+                        wrong_topics_json: wrong_topics_json,
                         time_spent_minutes: parseInt(newQuestion.time_spent_minutes) || null
                       }
                     });
@@ -1434,7 +1428,8 @@ export default function Dashboard() {
                       wrong_count: newQuestion.wrong_count,
                       blank_count: newQuestion.blank_count || "0",
                       study_date: newQuestion.study_date,
-                      wrong_topics: wrong_topics_converted,
+                      wrong_topics: wrong_topics_simple,
+                      wrong_topics_json: wrong_topics_json,
                       time_spent_minutes: parseInt(newQuestion.time_spent_minutes) || null
                     });
                   }

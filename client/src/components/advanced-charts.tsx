@@ -310,11 +310,12 @@ export function AdvancedCharts() {
         </CardHeader>
         <CardContent className="pt-8 pb-8 relative min-h-[400px]">
           {(() => {
-            // Filter only question logs that have wrong topics from "Yanlış Konu Analizi"
+            // Filter only question logs that have structured wrong topic analysis from "Yanlış Konu Analizi"
             const wrongTopicAnalysisLogs = questionLogs.filter(log => 
-              log.wrong_topics && 
-              log.wrong_topics.length > 0 && 
-              log.wrong_topics.some(topicItem => typeof topicItem === 'object' && topicItem.topic)
+              log.wrong_topics_json && 
+              log.wrong_topics_json.trim() !== '' &&
+              log.wrong_topics_json !== 'null' &&
+              log.wrong_topics_json !== '[]'
             );
             
             if (isLoading) {
@@ -347,77 +348,90 @@ export function AdvancedCharts() {
             
             return (
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                {wrongTopicAnalysisLogs.slice(0, 15).map((log, index) => (
-                <div key={index} className="bg-white/70 dark:bg-gray-900/70 rounded-2xl p-6 border border-orange-200/50 dark:border-orange-700/50 hover:shadow-2xl transition-all duration-300 hover:scale-105 backdrop-blur-sm relative overflow-hidden group/card">
-                  <div className="absolute inset-0 bg-gradient-to-br from-orange-50/50 to-red-50/30 dark:from-orange-950/20 dark:to-red-950/10 opacity-0 group-hover/card:opacity-100 transition-opacity duration-300"></div>
-                  <div className="relative">
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center gap-3">
-                        <div className={`w-4 h-4 rounded-full shadow-md ${
-                          log.exam_type === 'TYT' ? 'bg-blue-500' : 'bg-purple-500'
-                        }`}></div>
-                        <span className="text-base font-bold text-orange-700 dark:text-orange-300">
-                          {log.exam_type} {log.subject}
-                        </span>
-                      </div>
-                      <div className="text-sm text-orange-600 dark:text-orange-400 bg-gradient-to-r from-orange-100 to-red-100 dark:from-orange-900/40 dark:to-red-900/40 px-3 py-1.5 rounded-full font-semibold shadow-md">
-                        {log.wrong_count} yanlış
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-3 mb-4">
-                      {log.wrong_topics && log.wrong_topics.slice(0, 3).map((topicItem, topicIndex) => {
-                        const topic = typeof topicItem === 'string' ? topicItem : topicItem.topic;
-                        const difficulty = typeof topicItem === 'object' ? topicItem.difficulty : undefined;
-                        const category = typeof topicItem === 'object' ? topicItem.category : undefined;
-                        
-                        return (
-                          <div key={topicIndex} className="text-sm bg-white/50 dark:bg-gray-800/50 p-3 rounded-xl">
-                            <div className="font-semibold text-gray-700 dark:text-gray-300 mb-2">{topic}</div>
-                            {(difficulty || category) && (
-                              <div className="flex gap-2 flex-wrap">
-                                {difficulty && (
-                                  <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-                                    difficulty === 'kolay' ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300' :
-                                    difficulty === 'orta' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300' :
-                                    'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300'
-                                  }`}>
-                                    📊 {difficulty}
-                                  </span>
-                                )}
-                                {category && (
-                                  <span className="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 font-medium">
-                                    🔍 {category}
-                                  </span>
-                                )}
-                              </div>
-                            )}
+                {wrongTopicAnalysisLogs.slice(0, 15).map((log, index) => {
+                  // Parse the structured wrong topics JSON data
+                  let parsedTopics: Array<{
+                    topic: string;
+                    difficulty: 'kolay' | 'orta' | 'zor';
+                    category: 'kavram' | 'hesaplama' | 'analiz' | 'dikkatsizlik';
+                    notes?: string;
+                  }> = [];
+                  
+                  try {
+                    if (log.wrong_topics_json) {
+                      parsedTopics = JSON.parse(log.wrong_topics_json);
+                    }
+                  } catch (e) {
+                    console.error('Error parsing wrong_topics_json:', e);
+                  }
+                  
+                  return (
+                    <div key={index} className="bg-white/70 dark:bg-gray-900/70 rounded-2xl p-6 border border-orange-200/50 dark:border-orange-700/50 hover:shadow-2xl transition-all duration-300 hover:scale-105 backdrop-blur-sm relative overflow-hidden group/card">
+                      <div className="absolute inset-0 bg-gradient-to-br from-orange-50/50 to-red-50/30 dark:from-orange-950/20 dark:to-red-950/10 opacity-0 group-hover/card:opacity-100 transition-opacity duration-300"></div>
+                      <div className="relative">
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center gap-3">
+                            <div className={`w-4 h-4 rounded-full shadow-md ${
+                              log.exam_type === 'TYT' ? 'bg-blue-500' : 'bg-purple-500'
+                            }`}></div>
+                            <span className="text-base font-bold text-orange-700 dark:text-orange-300">
+                              {log.exam_type} {log.subject}
+                            </span>
                           </div>
-                        );
-                      })}
-                      {log.wrong_topics && log.wrong_topics.length > 3 && (
-                        <div className="text-sm text-gray-500 text-center bg-white/30 dark:bg-gray-800/30 p-2 rounded-lg">
-                          +{log.wrong_topics.length - 3} konu daha...
+                          <div className="text-sm text-orange-600 dark:text-orange-400 bg-gradient-to-r from-orange-100 to-red-100 dark:from-orange-900/40 dark:to-red-900/40 px-3 py-1.5 rounded-full font-semibold shadow-md">
+                            {log.wrong_count} yanlış
+                          </div>
                         </div>
-                      )}
-                    </div>
-                    
-                    <div className="flex items-center justify-between text-sm text-muted-foreground pt-3 border-t border-orange-200/40 dark:border-orange-700/40">
-                      <div className="flex items-center gap-2">
-                        <Calendar className="h-4 w-4" />
-                        <span className="font-medium">{new Date(log.study_date).toLocaleDateString('tr-TR')}</span>
+                        
+                        <div className="space-y-3 mb-4">
+                          {parsedTopics.slice(0, 3).map((topicItem, topicIndex) => (
+                            <div key={topicIndex} className="text-sm bg-white/50 dark:bg-gray-800/50 p-3 rounded-xl">
+                              <div className="font-semibold text-gray-700 dark:text-gray-300 mb-2">{topicItem.topic}</div>
+                              <div className="flex gap-2 flex-wrap">
+                                <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                                  topicItem.difficulty === 'kolay' ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300' :
+                                  topicItem.difficulty === 'orta' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300' :
+                                  'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300'
+                                }`}>
+                                  📊 {topicItem.difficulty}
+                                </span>
+                                <span className="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 font-medium">
+                                  🔍 {topicItem.category === 'kavram' ? 'Kavram Eksikliği' :
+                                      topicItem.category === 'hesaplama' ? 'Hesaplama Hatası' :
+                                      topicItem.category === 'analiz' ? 'Analiz Sorunu' : 'Dikkatsizlik'}
+                                </span>
+                              </div>
+                              {topicItem.notes && (
+                                <div className="mt-2 text-xs text-gray-600 dark:text-gray-400 italic">
+                                  "{topicItem.notes}"
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                          {parsedTopics.length > 3 && (
+                            <div className="text-sm text-gray-500 text-center bg-white/30 dark:bg-gray-800/30 p-2 rounded-lg">
+                              +{parsedTopics.length - 3} konu daha...
+                            </div>
+                          )}
+                        </div>
+                        
+                        <div className="flex items-center justify-between text-sm text-muted-foreground pt-3 border-t border-orange-200/40 dark:border-orange-700/40">
+                          <div className="flex items-center gap-2">
+                            <Calendar className="h-4 w-4" />
+                            <span className="font-medium">{new Date(log.study_date).toLocaleDateString('tr-TR')}</span>
+                          </div>
+                          {log.time_spent_minutes && (
+                            <div className="flex items-center gap-2">
+                              <TrendingDown className="h-4 w-4" />
+                              <span className="font-medium">{log.time_spent_minutes} dk</span>
+                            </div>
+                          )}
+                        </div>
                       </div>
-                      {log.time_spent_minutes && (
-                        <div className="flex items-center gap-2">
-                          <TrendingDown className="h-4 w-4" />
-                          <span className="font-medium">{log.time_spent_minutes} dk</span>
-                        </div>
-                      )}
                     </div>
-                  </div>
-                </div>
-              ))}
-            </div>
+                  );
+                })}
+              </div>
             );
           })()}
         </CardContent>
