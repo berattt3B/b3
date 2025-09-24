@@ -35,6 +35,11 @@ export function AdvancedCharts() {
     queryKey: ["/api/topics/priority"],
   });
 
+  // Flashcard error analytics
+  const { data: flashcardErrors = [] } = useQuery<any[]>({
+    queryKey: ["/api/flashcards/errors"],
+  });
+
   // Prepare line chart data for net progression over time
   const prepareNetProgressionData = () => {
     // Sort exams by date descending to get latest 10, then reverse for chronological order
@@ -97,16 +102,51 @@ export function AdvancedCharts() {
     }));
   };
 
-  // NEW: Prepare topic error frequency data
+  // NEW: Prepare combined topic error frequency data (from both question logs and flashcards)
   const prepareTopicErrorData = () => {
-    return topicStats.slice(0, 6).map(stat => ({
-      topic: stat.topic.length > 12 ? `${stat.topic.substring(0, 12)}...` : stat.topic,
-      fullTopic: stat.topic,
-      errors: stat.wrongMentions,
-      frequency: stat.mentionFrequency,
-      sessions: stat.totalSessions,
-      color: stat.wrongMentions >= 5 ? '#dc2626' : stat.wrongMentions >= 3 ? '#ea580c' : '#f59e0b'
-    }));
+    // Combine topic stats from question logs and flashcard errors
+    const combinedStats = new Map<string, { errors: number; frequency: number; sessions: number; source: string[] }>();
+    
+    // Add stats from question logs
+    topicStats.forEach(stat => {
+      const existing = combinedStats.get(stat.topic) || { errors: 0, frequency: 0, sessions: 0, source: [] };
+      existing.errors += stat.wrongMentions;
+      existing.frequency += stat.mentionFrequency;
+      existing.sessions += stat.totalSessions;
+      existing.source.push('Soru Çözümü');
+      combinedStats.set(stat.topic, existing);
+    });
+    
+    // Add stats from flashcard errors - group by topic
+    const flashcardTopicStats = new Map<string, number>();
+    flashcardErrors.forEach(error => {
+      const topic = error.topic || 'Genel';
+      flashcardTopicStats.set(topic, (flashcardTopicStats.get(topic) || 0) + 1);
+    });
+    
+    flashcardTopicStats.forEach((count, topic) => {
+      const existing = combinedStats.get(topic) || { errors: 0, frequency: 0, sessions: 0, source: [] };
+      existing.errors += count;
+      existing.frequency += count * 10; // Weight flashcard errors higher
+      if (!existing.source.includes('Tekrar Kartları')) {
+        existing.source.push('Tekrar Kartları');
+      }
+      combinedStats.set(topic, existing);
+    });
+    
+    // Convert to array and sort by total errors
+    return Array.from(combinedStats.entries())
+      .map(([topic, stats]) => ({
+        topic: topic.length > 12 ? `${topic.substring(0, 12)}...` : topic,
+        fullTopic: topic,
+        errors: stats.errors,
+        frequency: stats.frequency,
+        sessions: stats.sessions,
+        source: stats.source.join(' + '),
+        color: stats.errors >= 8 ? '#dc2626' : stats.errors >= 5 ? '#ea580c' : stats.errors >= 3 ? '#f59e0b' : '#22c55e'
+      }))
+      .sort((a, b) => b.errors - a.errors)
+      .slice(0, 8); // Show top 8 most problematic topics
   };
 
   const lineChartData = prepareNetProgressionData();
@@ -232,7 +272,7 @@ export function AdvancedCharts() {
                       }}
                       formatter={(value: any, name: any, props: any) => [
                         `${value} hata`,
-                        `%${props.payload.frequency.toFixed(1)} sıklıkla`
+                        `Kaynak: ${props.payload.source}`
                       ]}
                       labelFormatter={(label: any, payload: any) => payload?.[0]?.payload?.fullTopic || label}
                     />
