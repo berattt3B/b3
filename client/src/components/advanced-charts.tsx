@@ -210,10 +210,10 @@ export function AdvancedCharts() {
     
     // Add from topicStats (question logs)
     topicStats.forEach(stat => {
-      const key = stat.topic;
+      const key = stat.topic.toLowerCase().trim(); // Normalize key to prevent case/whitespace duplication
       if (!topicErrorMap.has(key)) {
         topicErrorMap.set(key, { 
-          topic: key, 
+          topic: stat.topic, // Use original topic name for display
           errors: 0, 
           frequency: 0, 
           sessions: 0 
@@ -227,10 +227,11 @@ export function AdvancedCharts() {
     
     // Add from flashcard errors
     flashcardErrors.forEach(error => {
-      const key = error.topic || 'Bilinmeyen Konu';
+      const rawTopic = error.topic || 'Bilinmeyen Konu';
+      const key = rawTopic.toLowerCase().trim(); // Normalize key to prevent case/whitespace duplication
       if (!topicErrorMap.has(key)) {
         topicErrorMap.set(key, { 
-          topic: key, 
+          topic: rawTopic, // Use original topic name for display
           errors: 0, 
           frequency: 0, 
           sessions: 0 
@@ -240,12 +241,29 @@ export function AdvancedCharts() {
       data.errors += 1; // Each flashcard error counts as 1
     });
     
-    // Convert to array and sort by error count
+    // Convert to array, filter out empty/null topics, sort by error count, and remove duplicates
     const combinedData = Array.from(topicErrorMap.values())
+      .filter(item => item.topic && item.topic.trim() !== '')
       .sort((a, b) => b.errors - a.errors)
       .slice(0, 10);
     
-    return combinedData;
+    // Final check to remove any duplicates based on topic name (case insensitive)
+    const finalData = combinedData.reduce((acc, item) => {
+      const existingIndex = acc.findIndex(existing => 
+        existing.topic.toLowerCase().trim() === item.topic.toLowerCase().trim()
+      );
+      if (existingIndex === -1) {
+        acc.push(item);
+      } else {
+        // Merge the data if duplicate found
+        acc[existingIndex].errors += item.errors;
+        acc[existingIndex].frequency = Math.max(acc[existingIndex].frequency, item.frequency);
+        acc[existingIndex].sessions += item.sessions;
+      }
+      return acc;
+    }, [] as any[]);
+    
+    return finalData;
   };
 
   const priorityTopicsData = preparePriorityTopicsData();
