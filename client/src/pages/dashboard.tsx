@@ -61,7 +61,7 @@ export default function Dashboard() {
     time_spent_minutes: ""
   });
   const [wrongTopicInput, setWrongTopicInput] = useState("");
-  const [selectedTopicDifficulty, setSelectedTopicDifficulty] = useState<'kolay' | 'orta' | 'zor'>('orta');
+  const [selectedTopicDifficulty, setSelectedTopicDifficulty] = useState<'kolay' | 'orta' | 'zor'>('kolay');
   const [selectedTopicCategory, setSelectedTopicCategory] = useState<'kavram' | 'hesaplama' | 'analiz' | 'dikkatsizlik'>('kavram');
   const [showExamDialog, setShowExamDialog] = useState(false);
   const [newExamResult, setNewExamResult] = useState({ 
@@ -493,9 +493,9 @@ export default function Dashboard() {
               <div className="flex justify-center">
                 <div className="inline-block min-w-0">
                   {/* Month labels */}
-                  <div className="flex mb-4 relative">
-                    <div className="w-12"></div> {/* Increased space for day labels */}
-                    <div className="flex gap-1 relative" style={{ width: `${heatmapWeeks.length * 21}px`, height: '24px' }}>
+                  <div className="flex mb-6 relative">
+                    <div className="w-12"></div> {/* Space for day labels */}
+                    <div className="flex gap-1 relative" style={{ width: `${heatmapWeeks.length * 30}px`, height: '32px' }}>
                       {(() => {
                         const monthNames = [
                           'Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran',
@@ -525,7 +525,7 @@ export default function Dashboard() {
                           const startWeek = range.start;
                           const endWeek = range.end;
                           const centerWeek = Math.floor((startWeek + endWeek) / 2);
-                          const leftPosition = centerWeek * 21; // 20px width + 1px gap
+                          const leftPosition = centerWeek * 29; // 28px width + 1px gap
                           const isCurrentMonth = monthIndex === currentMonth;
                           const weekSpan = endWeek - startWeek + 1;
                           
@@ -534,20 +534,27 @@ export default function Dashboard() {
                             monthLabels.push(
                               <div 
                                 key={`month-${monthIndex}`} 
-                                className={`absolute text-xs font-semibold bg-white/90 dark:bg-gray-800/90 px-2 py-1 rounded-full border shadow-sm ${
+                                className={`absolute text-sm font-bold px-4 py-2 rounded-xl border-2 shadow-lg backdrop-blur-sm relative transition-all duration-300 hover:scale-105 ${
                                   isCurrentMonth 
-                                    ? 'text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-900/50 border-purple-300 dark:border-purple-600' 
-                                    : 'text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-600'
+                                    ? 'text-white bg-gradient-to-r from-purple-500 to-indigo-500 border-purple-400 shadow-purple-200 dark:shadow-purple-800' 
+                                    : 'text-gray-800 dark:text-gray-200 bg-white/90 dark:bg-gray-800/90 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
                                 }`}
                                 style={{ 
                                   left: `${leftPosition}px`, 
                                   transform: 'translateX(-50%)',
                                   minWidth: 'fit-content',
                                   textAlign: 'center',
-                                  top: '2px'
+                                  top: '0px'
                                 }}
                               >
-                                {monthNames[monthIndex]} {isCurrentMonth ? '⭐' : ''}
+                                {monthNames[monthIndex]}
+                                {isCurrentMonth && (
+                                  <div className="absolute -top-1 -right-1 w-3 h-3 bg-yellow-400 rounded-full shadow-lg animate-bounce" 
+                                       style={{ 
+                                         boxShadow: '0 0 8px rgba(251, 191, 36, 0.6)' 
+                                       }}
+                                  />
+                                )}
                               </div>
                             );
                           }
@@ -561,14 +568,14 @@ export default function Dashboard() {
                 {/* Heatmap grid */}
                 <div className="flex">
                   {/* Day labels */}
-                  <div className="flex flex-col justify-between mr-4" style={{ height: '147px', width: '48px' }}>
-                    <div className="text-xs text-muted-foreground h-5 flex items-center justify-end pr-2 font-medium">Pzt</div>
-                    <div className="text-xs text-transparent h-5">Sal</div>
-                    <div className="text-xs text-muted-foreground h-5 flex items-center justify-end pr-2 font-medium">Çar</div>
-                    <div className="text-xs text-transparent h-5">Per</div>
-                    <div className="text-xs text-muted-foreground h-5 flex items-center justify-end pr-2 font-medium">Cum</div>
-                    <div className="text-xs text-transparent h-5">Cmt</div>
-                    <div className="text-xs text-muted-foreground h-5 flex items-center justify-end pr-2 font-medium">Paz</div>
+                  <div className="flex flex-col justify-between mr-4" style={{ height: '196px', width: '48px' }}>
+                    <div className="text-xs text-muted-foreground h-7 flex items-center justify-end pr-2 font-medium">Pzt</div>
+                    <div className="text-xs text-transparent h-7">Sal</div>
+                    <div className="text-xs text-muted-foreground h-7 flex items-center justify-end pr-2 font-medium">Çar</div>
+                    <div className="text-xs text-transparent h-7">Per</div>
+                    <div className="text-xs text-muted-foreground h-7 flex items-center justify-end pr-2 font-medium">Cum</div>
+                    <div className="text-xs text-transparent h-7">Cmt</div>
+                    <div className="text-xs text-muted-foreground h-7 flex items-center justify-end pr-2 font-medium">Paz</div>
                   </div>
                   
                   {/* Weeks grid */}
@@ -580,38 +587,69 @@ export default function Dashboard() {
                             return (
                               <div
                                 key={dayIndex}
-                                className="w-5 h-5 rounded-md bg-transparent"
+                                className="w-7 h-7 rounded-lg bg-transparent"
                               />
                             );
                           }
                           
                           const opacity = day.intensity === 0 ? 0.1 : Math.max(0.2, day.intensity);
+                          
+                          // Check if this is the first or last day of the month
+                          const isFirstDayOfMonth = day.day === 1;
+                          const isLastDayOfMonth = (() => {
+                            const currentDate = new Date(day.date);
+                            const nextMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+                            return day.day === nextMonth.getDate();
+                          })();
+                          
+                          // Month-specific colors for markers
+                          const monthColors = [
+                            '#dc2626', '#ea580c', '#ca8a04', '#65a30d', // Ocak-Nisan
+                            '#059669', '#0891b2', '#2563eb', '#7c3aed', // Mayıs-Ağustos  
+                            '#c026d3', '#be185d', '#be123c', '#991b1b'  // Eylül-Aralık
+                          ];
+                          const monthColor = monthColors[day.month] || '#6b7280';
+                          
                           return (
                             <div
                               key={dayIndex}
-                              className={`w-5 h-5 rounded-md border transition-all duration-200 hover:brightness-110 hover:shadow-md cursor-pointer relative ${
+                              className={`w-7 h-7 rounded-lg border-2 transition-all duration-300 hover:brightness-110 hover:shadow-xl hover:scale-105 cursor-pointer relative backdrop-blur-sm ${
                                 day.isToday 
-                                  ? 'border-2 border-purple-400 dark:border-purple-300 shadow-lg shadow-purple-300 dark:shadow-purple-800 ring-2 ring-purple-200 dark:ring-purple-700' 
+                                  ? 'border-purple-400 dark:border-purple-300 shadow-xl shadow-purple-300/50 dark:shadow-purple-800/50 ring-2 ring-purple-200/60 dark:ring-purple-700/60' 
                                   : day.intensity === 0 
-                                    ? 'bg-gray-100 dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:bg-gray-200 dark:hover:bg-gray-700' 
-                                    : 'border-purple-300 dark:border-purple-600 hover:border-purple-400 dark:hover:border-purple-500'
+                                    ? 'bg-gray-100/80 dark:bg-gray-800/80 border-gray-200/60 dark:border-gray-700/60 hover:bg-gray-200/90 dark:hover:bg-gray-700/90 shadow-sm' 
+                                    : 'border-purple-300/60 dark:border-purple-600/60 hover:border-purple-400/80 dark:hover:border-purple-500/80 shadow-md'
                               }`}
                               style={{
                                 backgroundColor: day.isToday 
-                                  ? (day.intensity > 0 ? `rgba(147, 51, 234, 0.9)` : `rgba(147, 51, 234, 0.4)`)
+                                  ? (day.intensity > 0 ? `rgba(147, 51, 234, 0.85)` : `rgba(147, 51, 234, 0.35)`)
                                   : day.intensity > 0 ? `rgba(147, 51, 234, ${opacity})` : undefined,
                                 animation: day.isToday ? 'breathing 1.8s ease-in-out infinite' : undefined,
-                                boxShadow: day.isToday ? '0 0 20px rgba(147, 51, 234, 0.6)' : undefined
+                                boxShadow: day.isToday ? '0 0 25px rgba(147, 51, 234, 0.5)' : day.intensity > 0 ? '0 2px 8px rgba(147, 51, 234, 0.2)' : undefined
                               }}
                               title={`${day.date}${day.isToday ? ' (BUGÜN)' : ''}: ${day.count} aktivite (${day.questionCount} soru, ${day.taskCount} görev)`}
                               onClick={() => handleHeatmapDayClick(day)}
                             >
                               {day.isToday && (
                                 <>
-                                  <div className="absolute inset-0 rounded-md bg-white dark:bg-purple-300 opacity-40 animate-ping pointer-events-none"></div>
-                                  <div className="absolute inset-0 rounded-md bg-gradient-to-br from-white/20 to-transparent pointer-events-none"></div>
-                                  <div className="absolute top-0 right-0 w-1 h-1 bg-yellow-400 rounded-full animate-pulse"></div>
+                                  <div className="absolute -top-1 -right-1 w-3 h-3 bg-purple-500 rounded-full shadow-lg animate-pulse" 
+                                       style={{ 
+                                         boxShadow: '0 0 10px rgba(147, 51, 234, 0.8), 0 0 20px rgba(147, 51, 234, 0.4)' 
+                                       }}
+                                  />
                                 </>
+                              )}
+                              
+                              {/* Month Start/End Markers */}
+                              {(isFirstDayOfMonth || isLastDayOfMonth) && (
+                                <div 
+                                  className={`absolute ${isFirstDayOfMonth ? '-top-1.5 -left-1.5' : '-bottom-1.5 -right-1.5'} w-3 h-3 rounded-full border-2 border-white shadow-lg animate-pulse`}
+                                  style={{ 
+                                    backgroundColor: monthColor,
+                                    boxShadow: `0 0 8px ${monthColor}60, 0 0 15px ${monthColor}30`
+                                  }}
+                                  title={`${isFirstDayOfMonth ? 'Ay Başı' : 'Ay Sonu'} - ${new Date(day.date).toLocaleDateString('tr-TR', { month: 'long' })}`}
+                                />
                               )}
                             </div>
                           );
@@ -1898,8 +1936,11 @@ export default function Dashboard() {
                     </div>
                   </div>
                   {parseInt(newExamResult.subjects.matematik.wrong) > 0 && (
-                    <div>
-                      <label className="block text-xs font-medium mb-1 text-red-600">Eksik konuları yazınız (virgülle ayırın)</label>
+                    <div className="bg-gradient-to-r from-blue-50/70 to-indigo-50/50 dark:from-blue-900/20 dark:to-indigo-900/15 rounded-xl p-4 border border-blue-200/40 dark:border-blue-700/30 mt-3">
+                      <div className="flex items-center gap-2 mb-3">
+                        <AlertTriangle className="h-4 w-4 text-blue-500" />
+                        <label className="text-sm font-semibold text-blue-700 dark:text-blue-300">🔍 Matematik Eksik Konular</label>
+                      </div>
                       <Input
                         value={currentWrongTopics.matematik || ""}
                         onChange={(e) => {
@@ -1913,8 +1954,14 @@ export default function Dashboard() {
                             }
                           });
                         }}
-                        placeholder="konu1, konu2, konu3"
+                        placeholder="konu1, konu2, konu3 şeklinde virgülle ayırarak yazın..."
+                        className="bg-white/80 dark:bg-gray-800/80 border-blue-200 dark:border-blue-700/50 focus:border-blue-400 dark:focus:border-blue-500 rounded-xl shadow-sm"
                       />
+                      {currentWrongTopics.matematik && (
+                        <div className="mt-2 text-xs text-blue-600/70 dark:text-blue-400/70">
+                          💡 Bu konular öncelik listesine eklenecek
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>

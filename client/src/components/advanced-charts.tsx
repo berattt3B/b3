@@ -1,18 +1,669 @@
 import { useQuery } from "@tanstack/react-query";
-import { TrendingUp } from "lucide-react";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from "recharts";
+import { TrendingUp, Target, Brain, AlertTriangle, BarChart3, Book, Calculator, Atom, FlaskConical, Dna, User, Calendar, TrendingDown } from "lucide-react";
+import { ExamResult, QuestionLog } from "@shared/schema";
+import { useMemo, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+
+interface MissingTopic {
+  topic: string;
+  subject: string;
+  source: 'exam' | 'question';
+  frequency: number;
+  lastSeen: string;
+  difficulty?: string;
+  category?: string;
+}
+
+interface ExamNetData {
+  date: string;
+  examName: string;
+  tytNet: number;
+  aytNet: number;
+  tytTarget: number;
+  aytTarget: number;
+}
+
+interface SubjectAnalysisData {
+  subject: string;
+  correct: number;
+  wrong: number;
+  totalQuestions: number;
+  netScore: number;
+  color: string;
+}
 
 export function AdvancedCharts() {
+  const [analysisMode, setAnalysisMode] = useState<'net' | 'subject'>('net');
+
+  const { data: examResults = [], isLoading: isLoadingExams } = useQuery<ExamResult[]>({
+    queryKey: ["/api/exam-results"],
+  });
+  
+  const { data: questionLogs = [], isLoading: isLoadingQuestions } = useQuery<QuestionLog[]>({
+    queryKey: ["/api/question-logs"],
+  });
+
+  const isLoading = isLoadingExams || isLoadingQuestions;
+
+  // Process Missing Topics - combining data from both question logs and exam results
+  const missingTopics = useMemo(() => {
+    const topicMap = new Map<string, MissingTopic>();
+
+    // Process question logs
+    questionLogs.forEach(log => {
+      if (log.wrong_topics && log.wrong_topics.length > 0) {
+        log.wrong_topics.forEach(topicItem => {
+          // Handle both string[] and object[] formats
+          const topic = typeof topicItem === 'string' ? topicItem : topicItem.topic;
+          if (topic) {
+            const key = `${log.subject}-${topic}`;
+            if (topicMap.has(key)) {
+              const existing = topicMap.get(key)!;
+              existing.frequency += 1;
+              existing.lastSeen = log.study_date > existing.lastSeen ? log.study_date : existing.lastSeen;
+            } else {
+              topicMap.set(key, {
+                topic,
+                subject: log.subject,
+                source: 'question',
+                frequency: 1,
+                lastSeen: log.study_date,
+                difficulty: typeof topicItem === 'object' ? topicItem.difficulty : undefined,
+                category: typeof topicItem === 'object' ? topicItem.category : undefined
+              });
+            }
+          }
+        });
+      }
+    });
+
+    // Process exam results - we need to extract missing topics from subjects_data
+    examResults.forEach(exam => {
+      if (exam.subjects_data) {
+        try {
+          const subjectsData = JSON.parse(exam.subjects_data);
+          Object.entries(subjectsData).forEach(([subjectKey, data]: [string, any]) => {
+            if (data.wrong_topics && data.wrong_topics.length > 0) {
+              const subjectNameMap: {[key: string]: string} = {
+                'turkce': 'Türkçe',
+                'matematik': 'Matematik',
+                'sosyal': 'Sosyal',
+                'fen': 'Fen',
+                'fizik': 'Fizik',
+                'kimya': 'Kimya',
+                'biyoloji': 'Biyoloji'
+              };
+              const subjectName = subjectNameMap[subjectKey] || subjectKey;
+              
+              data.wrong_topics.forEach((topic: string) => {
+                const key = `${subjectName}-${topic}`;
+                if (topicMap.has(key)) {
+                  const existing = topicMap.get(key)!;
+                  existing.frequency += 1;
+                  existing.lastSeen = exam.exam_date > existing.lastSeen ? exam.exam_date : existing.lastSeen;
+                } else {
+                  topicMap.set(key, {
+                    topic,
+                    subject: subjectName,
+                    source: 'exam',
+                    frequency: 1,
+                    lastSeen: exam.exam_date
+                  });
+                }
+              });
+            }
+          });
+        } catch (e) {
+          console.error('Error parsing subjects_data:', e);
+        }
+      }
+    });
+
+    return Array.from(topicMap.values()).sort((a, b) => b.frequency - a.frequency);
+  }, [questionLogs, examResults]);
+
+  // Process Net Analysis Data
+  const netAnalysisData = useMemo(() => {
+    return examResults.map(exam => ({
+      date: new Date(exam.exam_date).toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit' }),
+      examName: exam.exam_name,
+      tytNet: parseFloat(exam.tyt_net) || 0,
+      aytNet: parseFloat(exam.ayt_net) || 0,
+      tytTarget: 90,
+      aytTarget: 50,
+      sortDate: exam.exam_date
+    })).sort((a, b) => new Date(a.sortDate).getTime() - new Date(b.sortDate).getTime());
+  }, [examResults]);
+
+  // Process Subject Analysis Data - For both card view and radar chart
+  const subjectAnalysisData = useMemo(() => {
+    const subjectMap = new Map<string, { correct: number; wrong: number; total: number }>();
+    
+    // Process exam results for subject data
+    examResults.forEach(exam => {
+      if (exam.subjects_data) {
+        try {
+          const subjectsData = JSON.parse(exam.subjects_data);
+          Object.entries(subjectsData).forEach(([subjectKey, data]: [string, any]) => {
+            const subjectNameMap: {[key: string]: string} = {
+              'turkce': 'Türkçe',
+              'matematik': 'Matematik', 
+              'sosyal': 'Sosyal',
+              'fen': 'Fen',
+              'fizik': 'Fizik',
+              'kimya': 'Kimya',
+              'biyoloji': 'Biyoloji'
+            };
+            const subjectName = subjectNameMap[subjectKey] || subjectKey;
+            const correct = parseInt(data.correct) || 0;
+            const wrong = parseInt(data.wrong) || 0;
+            
+            if (correct > 0 || wrong > 0) {
+              if (subjectMap.has(subjectName)) {
+                const existing = subjectMap.get(subjectName)!;
+                existing.correct += correct;
+                existing.wrong += wrong;
+                existing.total += (correct + wrong);
+              } else {
+                subjectMap.set(subjectName, {
+                  correct,
+                  wrong,
+                  total: correct + wrong
+                });
+              }
+            }
+          });
+        } catch (e) {
+          console.error('Error parsing subjects_data:', e);
+        }
+      }
+    });
+
+    const subjectColors: {[key: string]: string} = {
+      'Türkçe': '#ef4444',
+      'Matematik': '#3b82f6', 
+      'Sosyal': '#f59e0b',
+      'Fen': '#10b981',
+      'Fizik': '#8b5cf6',
+      'Kimya': '#ec4899',
+      'Biyoloji': '#06b6d4'
+    };
+
+    return Array.from(subjectMap.entries()).map(([subject, data]) => ({
+      subject,
+      correct: data.correct,
+      wrong: data.wrong,
+      totalQuestions: data.total,
+      netScore: data.correct - (data.wrong * 0.25),
+      color: subjectColors[subject] || '#6b7280',
+      correctRate: data.total > 0 ? (data.correct / data.total) * 100 : 0,
+      wrongRate: data.total > 0 ? (data.wrong / data.total) * 100 : 0
+    }));
+  }, [examResults]);
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="bg-card rounded-lg border p-8 text-center">
+          <div className="animate-spin w-8 h-8 border-2 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Analiz verileri yükleniyor...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
-      <div className="bg-card rounded-lg border p-6">
-        <div className="flex items-center gap-3 mb-4">
-          <TrendingUp className="h-6 w-6 text-primary" />
-          <h3 className="text-xl font-semibold">Advanced Charts</h3>
-        </div>
-        <p className="text-muted-foreground">
-          Advanced charts will be available here. Currently being loaded...
-        </p>
-      </div>
+      {/* Missing Topics Section */}
+      <Card className="bg-gradient-to-br from-red-50/50 via-card to-orange-50/50 dark:from-red-950/30 dark:via-card dark:to-orange-950/30 backdrop-blur-sm border-2 border-red-200/30 dark:border-red-800/30 shadow-2xl">
+        <CardHeader className="bg-gradient-to-r from-red-500/10 to-orange-500/10 rounded-t-lg border-b border-red-200/30">
+          <CardTitle className="text-xl font-bold bg-gradient-to-r from-red-600 to-orange-600 bg-clip-text text-transparent flex items-center gap-2">
+            <AlertTriangle className="h-6 w-6 text-red-500" />
+            🎯 Eksik Olduğum Konular
+          </CardTitle>
+          <p className="text-sm text-red-600/70 dark:text-red-400/70 font-medium">
+            Soru çözümü ve deneme sınavlarından toplanan eksik konu analizi
+          </p>
+        </CardHeader>
+        <CardContent className="pt-6">
+          {missingTopics.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-green-100 to-emerald-100 dark:from-green-900/30 dark:to-emerald-900/30 flex items-center justify-center mx-auto mb-4 shadow-lg">
+                <Target className="h-8 w-8 text-green-500" />
+              </div>
+              <h4 className="text-lg font-semibold text-green-700 dark:text-green-300 mb-2">Harika! Henüz eksik konu yok</h4>
+              <p className="text-sm opacity-75">Soru çözümü ve deneme sınavı ekledikçe eksik konular burada görünecek</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {missingTopics.slice(0, 12).map((topic, index) => (
+                <div key={index} className="bg-white/60 dark:bg-gray-900/60 rounded-xl p-4 border border-red-200/40 dark:border-red-700/40 hover:shadow-lg transition-all duration-200">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-semibold text-red-700 dark:text-red-300">{topic.subject}</span>
+                    <span className="bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-xs px-2 py-1 rounded-full font-medium">
+                      {topic.frequency} Kere
+                    </span>
+                  </div>
+                  <p className="text-sm text-gray-700 dark:text-gray-300 mb-2 font-medium">{topic.topic}</p>
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span className={`px-2 py-1 rounded-full ${topic.source === 'exam' ? 'bg-blue-100 text-blue-600' : 'bg-purple-100 text-purple-600'}`}>
+                      {topic.source === 'exam' ? 'Deneme' : 'Soru'}
+                    </span>
+                    <span>{new Date(topic.lastSeen).toLocaleDateString('tr-TR')}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Error Frequency Analysis Section */}
+      <Card className="bg-gradient-to-br from-orange-50/50 via-card to-red-50/50 dark:from-orange-950/30 dark:via-card dark:to-red-950/30 backdrop-blur-sm border-2 border-orange-200/30 dark:border-orange-800/30 shadow-2xl">
+        <CardHeader className="bg-gradient-to-r from-orange-500/10 to-red-500/10 rounded-t-lg border-b border-orange-200/30">
+          <CardTitle className="text-xl font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent flex items-center gap-2">
+            <Brain className="h-6 w-6 text-orange-500" />
+            🔍 Hata Sıklığı Analizi
+          </CardTitle>
+          <p className="text-sm text-orange-600/70 dark:text-orange-400/70 font-medium">
+            Yanlış konu analizi ve kategori bazında hata sıklığı takibi
+          </p>
+        </CardHeader>
+        <CardContent className="pt-6">
+          {(() => {
+            // Filter only question logs that have wrong topics from "Yanlış Konu Analizi"
+            const wrongTopicAnalysisLogs = questionLogs.filter(log => 
+              log.wrong_topics && 
+              log.wrong_topics.length > 0 && 
+              log.wrong_topics.some(topicItem => typeof topicItem === 'object' && topicItem.topic)
+            );
+            
+            if (wrongTopicAnalysisLogs.length === 0) {
+              return (
+                <div className="text-center py-8 text-muted-foreground">
+                  <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-100 to-cyan-100 dark:from-blue-900/30 dark:to-cyan-900/30 flex items-center justify-center mx-auto mb-4 shadow-lg">
+                    <Brain className="h-8 w-8 text-blue-500" />
+                  </div>
+                  <h4 className="text-lg font-semibold text-blue-700 dark:text-blue-300 mb-2">Henüz hata analizi verisi yok</h4>
+                  <p className="text-sm opacity-75">Soru ekleyip "Yanlış Konu Analizi" bölümünü doldurdukça hata sıklığınız burada görünecek</p>
+                </div>
+              );
+            }
+            
+            return (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {wrongTopicAnalysisLogs.slice(0, 12).map((log, index) => (
+                <div key={index} className="bg-white/60 dark:bg-gray-900/60 rounded-xl p-4 border border-orange-200/40 dark:border-orange-700/40 hover:shadow-lg transition-all duration-200">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <div className={`w-3 h-3 rounded-full ${
+                        log.exam_type === 'TYT' ? 'bg-blue-500' : 'bg-purple-500'
+                      }`}></div>
+                      <span className="text-sm font-semibold text-orange-700 dark:text-orange-300">
+                        {log.exam_type} {log.subject}
+                      </span>
+                    </div>
+                    <div className="text-xs text-orange-600 dark:text-orange-400 bg-orange-100 dark:bg-orange-900/30 px-2 py-1 rounded-full font-medium">
+                      {log.wrong_count} yanlış
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2 mb-3">
+                    {log.wrong_topics && log.wrong_topics.slice(0, 3).map((topicItem, topicIndex) => {
+                      const topic = typeof topicItem === 'string' ? topicItem : topicItem.topic;
+                      const difficulty = typeof topicItem === 'object' ? topicItem.difficulty : undefined;
+                      const category = typeof topicItem === 'object' ? topicItem.category : undefined;
+                      
+                      return (
+                        <div key={topicIndex} className="text-sm">
+                          <div className="font-medium text-gray-700 dark:text-gray-300">{topic}</div>
+                          {(difficulty || category) && (
+                            <div className="flex gap-2 mt-1">
+                              {difficulty && (
+                                <span className={`text-xs px-2 py-0.5 rounded-full ${
+                                  difficulty === 'kolay' ? 'bg-green-100 text-green-600' :
+                                  difficulty === 'orta' ? 'bg-yellow-100 text-yellow-600' :
+                                  'bg-red-100 text-red-600'
+                                }`}>
+                                  {difficulty}
+                                </span>
+                              )}
+                              {category && (
+                                <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-600">
+                                  {category}
+                                </span>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                    {log.wrong_topics && log.wrong_topics.length > 3 && (
+                      <div className="text-xs text-gray-500">+{log.wrong_topics.length - 3} konu daha...</div>
+                    )}
+                  </div>
+                  
+                  <div className="flex items-center justify-between text-xs text-muted-foreground pt-2 border-t border-orange-200/40 dark:border-orange-700/40">
+                    <div className="flex items-center gap-1">
+                      <Calendar className="h-3 w-3" />
+                      <span>{new Date(log.study_date).toLocaleDateString('tr-TR')}</span>
+                    </div>
+                    {log.time_spent_minutes && (
+                      <div className="flex items-center gap-1">
+                        <TrendingDown className="h-3 w-3" />
+                        <span>{log.time_spent_minutes} dk</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+            );
+          })()}
+        </CardContent>
+      </Card>
+
+      {/* Analysis Section */}
+      <Card className="bg-gradient-to-br from-indigo-50/50 via-card to-purple-50/50 dark:from-indigo-950/30 dark:via-card dark:to-purple-950/30 backdrop-blur-sm border-2 border-indigo-200/30 dark:border-indigo-800/30 shadow-2xl">
+        <CardHeader className="bg-gradient-to-r from-indigo-500/10 to-purple-500/10 rounded-t-lg border-b border-indigo-200/30">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+            <div>
+              <CardTitle className="text-xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent flex items-center gap-2">
+                <BarChart3 className="h-6 w-6 text-indigo-500" />
+                📊 Net & Ders Analizi
+              </CardTitle>
+              <p className="text-sm text-indigo-600/70 dark:text-indigo-400/70 font-medium">
+                {analysisMode === 'net' ? 'Deneme net gelişim grafiği ve hedef karşılaştırması' : 'Ders bazında doğru/yanlış dağılımı'}
+              </p>
+            </div>
+            
+            {/* Analysis Mode Toggle */}
+            <div className="flex bg-indigo-100/50 dark:bg-indigo-900/30 rounded-xl p-1 border border-indigo-200/50 dark:border-indigo-700/50">
+              <Button
+                variant={analysisMode === 'net' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setAnalysisMode('net')}
+                className={`px-4 py-2 rounded-lg transition-all duration-300 whitespace-nowrap ${
+                  analysisMode === 'net' 
+                    ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow-lg' 
+                    : 'text-indigo-600 dark:text-indigo-400 hover:bg-indigo-200/50 dark:hover:bg-indigo-800/50'
+                }`}
+                data-testid="button-analysis-net"
+              >
+                <TrendingUp className="h-4 w-4 mr-2" />
+                📈 Net Analiz
+              </Button>
+              <Button
+                variant={analysisMode === 'subject' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setAnalysisMode('subject')}
+                className={`px-4 py-2 rounded-lg transition-all duration-300 whitespace-nowrap ${
+                  analysisMode === 'subject' 
+                    ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow-lg' 
+                    : 'text-indigo-600 dark:text-indigo-400 hover:bg-indigo-200/50 dark:hover:bg-indigo-800/50'
+                }`}
+                data-testid="button-analysis-subject"
+              >
+                <Target className="h-4 w-4 mr-2" />
+                🎯 Ders Analiz
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="pt-6">
+          {analysisMode === 'net' ? (
+            // Net Analysis Chart
+            netAnalysisData.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground">
+                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30 flex items-center justify-center mx-auto mb-6 shadow-lg">
+                  <TrendingUp className="h-10 w-10 text-blue-500" />
+                </div>
+                <h4 className="text-lg font-semibold text-blue-700 dark:text-blue-300 mb-2">Henüz deneme verisi yok</h4>
+                <p className="text-sm opacity-75 mb-4">Deneme sonucu ekleyerek net analizinizi görüntüleyin</p>
+              </div>
+            ) : (
+              <div className="h-96 bg-gradient-to-br from-indigo-50/30 to-purple-50/30 dark:from-indigo-950/20 dark:to-purple-950/20 rounded-xl p-4">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={netAnalysisData} margin={{ top: 40, right: 60, bottom: 50, left: 40 }}>
+                    <defs>
+                      <linearGradient id="tytGlow" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
+                        <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                      </linearGradient>
+                      <linearGradient id="aytGlow" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#059669" stopOpacity={0.3}/>
+                        <stop offset="95%" stopColor="#059669" stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="4 4" stroke="currentColor" opacity={0.15} />
+                    <XAxis 
+                      dataKey="date" 
+                      tick={{ fontSize: 12, fontWeight: 600 }}
+                      className="text-foreground"
+                      axisLine={{ stroke: 'currentColor', opacity: 0.4 }}
+                      tickLine={{ stroke: 'currentColor', opacity: 0.4 }}
+                      angle={-30}
+                      textAnchor="end"
+                      height={50}
+                    />
+                    <YAxis 
+                      tick={{ fontSize: 12, fontWeight: 600 }}
+                      className="text-foreground"
+                      axisLine={{ stroke: 'currentColor', opacity: 0.4 }}
+                      tickLine={{ stroke: 'currentColor', opacity: 0.4 }}
+                      label={{ value: 'Net Sayısı', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle', fontWeight: 600 } }}
+                      domain={[0, 100]}
+                    />
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: 'hsl(var(--card))',
+                        border: '2px solid hsl(var(--border))',
+                        borderRadius: '16px',
+                        fontSize: '14px',
+                        boxShadow: '0 20px 40px rgba(0,0,0,0.15)',
+                        padding: '16px',
+                        backdropFilter: 'blur(8px)'
+                      }}
+                      labelFormatter={(label, payload) => {
+                        const data = payload?.[0]?.payload;
+                        return data ? `📊 ${data.examName} - ${label}` : label;
+                      }}
+                      formatter={(value: any, name: any) => [
+                        `${value} net`,
+                        name === 'tytNet' ? '🔵 TYT Net' : name === 'aytNet' ? '🟢 AYT Net' : 
+                        name === 'tytTarget' ? '🎯 TYT Hedef' : '🎯 AYT Hedef'
+                      ]}
+                    />
+                    <Legend 
+                      wrapperStyle={{ paddingTop: '30px', fontSize: '14px', fontWeight: 600 }}
+                      iconType="line"
+                    />
+                    
+                    {/* Target lines */}
+                    <Line 
+                      type="monotone" 
+                      dataKey="tytTarget" 
+                      stroke="#3b82f6" 
+                      strokeDasharray="10 6" 
+                      strokeWidth={3}
+                      dot={false} 
+                      connectNulls={false}
+                      name="🎯 TYT Hedef (90)"
+                      opacity={0.8}
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="aytTarget" 
+                      stroke="#059669" 
+                      strokeDasharray="10 6" 
+                      strokeWidth={3}
+                      dot={false} 
+                      connectNulls={false}
+                      name="🎯 AYT Hedef (50)"
+                      opacity={0.8}
+                    />
+                    
+                    {/* Actual nets */}
+                    <Line 
+                      type="monotone" 
+                      dataKey="tytNet" 
+                      stroke="#3b82f6" 
+                      strokeWidth={5}
+                      dot={{ fill: '#3b82f6', strokeWidth: 4, r: 8, stroke: '#ffffff', shadow: true }} 
+                      activeDot={{ r: 12, stroke: '#3b82f6', strokeWidth: 4, fill: '#ffffff', shadow: '0 0 15px rgba(59, 130, 246, 0.6)' }}
+                      connectNulls={false}
+                      name="🔵 TYT Net"
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="aytNet" 
+                      stroke="#059669" 
+                      strokeWidth={5}
+                      dot={{ fill: '#059669', strokeWidth: 4, r: 8, stroke: '#ffffff', shadow: true }} 
+                      activeDot={{ r: 12, stroke: '#059669', strokeWidth: 4, fill: '#ffffff', shadow: '0 0 15px rgba(5, 150, 105, 0.6)' }}
+                      connectNulls={false}
+                      name="🟢 AYT Net"
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            )
+          ) : (
+            // Subject Analysis - Polygon/Radar Chart
+            subjectAnalysisData.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground">
+                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-purple-100 to-indigo-100 dark:from-purple-900/30 dark:to-indigo-900/30 flex items-center justify-center mx-auto mb-6 shadow-lg">
+                  <Target className="h-10 w-10 text-purple-500" />
+                </div>
+                <h4 className="text-lg font-semibold text-purple-700 dark:text-purple-300 mb-2">Ders verisi bulunmuyor</h4>
+                <p className="text-sm opacity-75 mb-4">Deneme ekleyerek ders dağılımınızı analiz edin</p>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {/* Polygon Chart */}
+                <div className="h-[500px] bg-gradient-to-br from-purple-50/30 to-indigo-50/30 dark:from-purple-950/20 dark:to-indigo-950/20 rounded-xl p-6 flex items-center justify-center">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <RadarChart data={subjectAnalysisData} margin={{ top: 60, right: 80, bottom: 60, left: 80 }}>
+                      <defs>
+                        <linearGradient id="correctGlow" x1="0" y1="0" x2="1" y2="1">
+                          <stop offset="0%" stopColor="#22c55e" stopOpacity={0.4}/>
+                          <stop offset="100%" stopColor="#16a34a" stopOpacity={0.1}/>
+                        </linearGradient>
+                        <linearGradient id="wrongGlow" x1="0" y1="0" x2="1" y2="1">
+                          <stop offset="0%" stopColor="#ef4444" stopOpacity={0.4}/>
+                          <stop offset="100%" stopColor="#dc2626" stopOpacity={0.1}/>
+                        </linearGradient>
+                      </defs>
+                      <PolarGrid 
+                        stroke="currentColor" 
+                        className="opacity-25" 
+                        strokeWidth={1.5}
+                        radialLines={true}
+                      />
+                      <PolarAngleAxis 
+                        dataKey="subject" 
+                        tick={{ fontSize: 14, fontWeight: 700, fill: 'currentColor' }}
+                        className="text-foreground"
+                        radius={120}
+                      />
+                      <PolarRadiusAxis 
+                        angle={90} 
+                        domain={[0, 100]} 
+                        tick={{ fontSize: 11, fontWeight: 600 }}
+                        className="text-muted-foreground"
+                        tickCount={6}
+                        tickFormatter={(value) => `${value}%`}
+                      />
+                      <Radar
+                        name="✅ Doğru Cevaplar"
+                        dataKey="correctRate"
+                        stroke="#22c55e"
+                        fill="url(#correctGlow)"
+                        strokeWidth={4}
+                        dot={{ fill: '#22c55e', strokeWidth: 3, r: 8, stroke: '#ffffff' }}
+                        activeDot={{ r: 10, stroke: '#22c55e', strokeWidth: 4, fill: '#ffffff' }}
+                      />
+                      <Radar
+                        name="❌ Yanlış Cevaplar"
+                        dataKey="wrongRate"
+                        stroke="#ef4444"
+                        fill="url(#wrongGlow)"
+                        strokeWidth={4}
+                        dot={{ fill: '#ef4444', strokeWidth: 3, r: 8, stroke: '#ffffff' }}
+                        activeDot={{ r: 10, stroke: '#ef4444', strokeWidth: 4, fill: '#ffffff' }}
+                      />
+                      <Tooltip 
+                        contentStyle={{ 
+                          backgroundColor: 'hsl(var(--card))',
+                          border: '1px solid hsl(var(--border))',
+                          borderRadius: '12px',
+                          fontSize: '13px',
+                          boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
+                          padding: '12px'
+                        }}
+                        formatter={(value: any, name: any) => [
+                          `${typeof value === 'number' ? value.toFixed(1) : value}%`,
+                          name === 'correctRate' ? '✅ Doğru Oranı' : '❌ Yanlış Oranı'
+                        ]}
+                      />
+                      <Legend 
+                        wrapperStyle={{ paddingTop: '20px' }}
+                        iconType="circle"
+                        formatter={(value) => value === 'Doğru Cevaplar' ? '✅ Doğru Cevaplar' : '❌ Yanlış Cevaplar'}
+                      />
+                    </RadarChart>
+                  </ResponsiveContainer>
+                </div>
+                
+                {/* Summary Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                  {subjectAnalysisData.map((subject, index) => (
+                    <div key={index} className="bg-white/60 dark:bg-gray-900/60 rounded-xl p-4 border border-indigo-200/40 dark:border-indigo-700/40 hover:shadow-lg transition-all duration-200">
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="font-semibold text-gray-800 dark:text-gray-200">{subject.subject}</h4>
+                        <div className="w-4 h-4 rounded-full" style={{ backgroundColor: subject.color }}></div>
+                      </div>
+                      
+                      <div className="space-y-2 mb-4">
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs text-green-600 dark:text-green-400">✓ Doğru</span>
+                          <span className="text-sm font-semibold text-green-600 dark:text-green-400">{subject.correct}</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs text-red-600 dark:text-red-400">✗ Yanlış</span>
+                          <span className="text-sm font-semibold text-red-600 dark:text-red-400">{subject.wrong}</span>
+                        </div>
+                        <div className="flex justify-between items-center border-t pt-2">
+                          <span className="text-xs font-medium text-gray-600 dark:text-gray-400">Net</span>
+                          <span className="text-sm font-bold" style={{ color: subject.color }}>{subject.netScore.toFixed(1)}</span>
+                        </div>
+                      </div>
+                      
+                      {/* Progress bars */}
+                      <div className="space-y-2">
+                        <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                          <div 
+                            className="bg-green-500 h-2 rounded-full transition-all duration-500" 
+                            style={{ width: `${subject.correctRate}%` }}
+                          />
+                        </div>
+                        <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                          <div 
+                            className="bg-red-500 h-2 rounded-full transition-all duration-500" 
+                            style={{ width: `${subject.wrongRate}%` }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
