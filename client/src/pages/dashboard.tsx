@@ -958,9 +958,9 @@ export default function Dashboard() {
                               totalScore >= 40 ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300' :
                               'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300'
                             }`}>
-                              {totalScore >= 80 ? '🎯 Mükemmel' :
-                               totalScore >= 60 ? '👍 İyi' :
-                               totalScore >= 40 ? '📈 Orta' : '💪 Gelişime Açık'}
+                              {totalScore >= 80 ? '🎯' :
+                               totalScore >= 60 ? '👍' :
+                               totalScore >= 40 ? '📈' : '💪'}
                             </div>
                             <div className="text-xs text-muted-foreground">
                               {exam.exam_type} Denemesi
